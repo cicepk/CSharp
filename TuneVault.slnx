@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="TuneVault.Domain/TuneVault.Domain.csproj" />
+  <Project Path="TuneVault.Application/TuneVault.Application.csproj" />
+  <Project Path="TuneVault.Infrastructure/TuneVault.Infrastructure.csproj" />
+  <Project Path="TuneVault.API/TuneVault.API.csproj" />
+</Solution>
