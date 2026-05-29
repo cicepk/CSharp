@@ -13,7 +13,10 @@ namespace TuneVault.Infrastructure.Data
         public DbSet<MediaItem> MediaItems {get; set;}
         public DbSet<Playlist> Playlists {get; set;}
         public DbSet<PlaylistItem> PlaylistItems {get; set;}
-
+        public DbSet<Notification> Notifications {get; set;}
+        public DbSet<Follow> Follows {get; set;}
+        public DbSet<MediaShare> MediaShares {get; set;}
+        public DbSet<Favourite> Favourites {get; set;}
         protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

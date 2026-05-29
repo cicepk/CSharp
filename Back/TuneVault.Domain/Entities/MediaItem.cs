@@ -1,3 +1,4 @@
+using TuneVault.Domain.Enums;
 namespace TuneVault.Domain.Entities
 {
     public class MediaItem
@@ -6,8 +7,8 @@ namespace TuneVault.Domain.Entities
         public string Title {get; set;} = string.Empty;
         public string Artist {get; set;} = string.Empty;
         public string FilePath {get; set;} = string.Empty;
-        public string mediaType {get; set;} = "Audio"; // Hoac la "Video"
-        public int Duration {get; set;} // theo giay 
+        public MediaType MediaType {get; set;}
+        public int DurationSeconds {get; set;} 
         public DateTime CreatedAt {get; set;} = DateTime.UtcNow;
 
         public Guid OwnerId {get; set;}
