@@ -10,7 +10,7 @@ public interface IApplicationDbContext
     DbSet<Playlist> Playlists { get; }
     DbSet<PlaylistItem> PlaylistItems { get; }
     DbSet<Notification> Notifications { get; }
-    DbSet<Follow> Follows { get; set; }
+    DbSet<Follow> Follows { get; }
     DbSet<MediaShare> MediaShares { get; }
     DbSet<Favourite> Favourites { get; }
 

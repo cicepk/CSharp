@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using TuneVault.Application.Interfaces;
 using TuneVault.Domain.Entities;
 
 namespace TuneVault.Infrastructure.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : DbContext, IApplicationDbContext
     {
         //khoi tao constructor
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)

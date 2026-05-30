@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using TuneVault.Application.Interfaces;
 using TuneVault.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,10 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
+builder.Services.AddScoped<IApplicationDbContext>(provider =>
+    provider.GetRequiredService<ApplicationDbContext>());
+
+builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -20,5 +25,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.MapControllers();
 
 app.Run();
