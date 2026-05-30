@@ -38,6 +38,57 @@ namespace TuneVault.Infrastructure.Data
             .WithMany(m => m.PlaylistItems)
             .HasForeignKey(pi => pi.MediaItemId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // khoa chinh kep cho follow
+        modelBuilder.Entity<Follow>()
+            .HasKey(f => new { f.FollowerId, f.FollowedId });
+
+        modelBuilder.Entity<Follow>()
+            .HasOne(f => f.Follower)
+            .WithMany(u => u.Following)
+            .HasForeignKey(f => f.FollowerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Follow>()
+            .HasOne(f => f.Followed)
+            .WithMany(u => u.FollowedBy)
+            .HasForeignKey(f => f.FollowedId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // khoa chinh kep cho favourite
+        modelBuilder.Entity<Favourite>()
+            .HasKey(f => new { f.UserId, f.MediaItemId });
+
+        modelBuilder.Entity<Favourite>()
+            .HasOne(f => f.User)
+            .WithMany(u => u.Favourites)
+            .HasForeignKey(f => f.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Favourite>()
+            .HasOne(f => f.MediaItem)
+            .WithMany()
+            .HasForeignKey(f => f.MediaItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // cau hinh media share relationships
+        modelBuilder.Entity<MediaShare>()
+            .HasOne(m => m.MediaItem)
+            .WithMany()
+            .HasForeignKey(m => m.MediaItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<MediaShare>()
+            .HasOne(m => m.SharedByUser)
+            .WithMany(u => u.SharedByMe)
+            .HasForeignKey(m => m.SharedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<MediaShare>()
+            .HasOne(m => m.SharedToUser)
+            .WithMany(u => u.SharedToMe)
+            .HasForeignKey(m => m.SharedToUserId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
     }
 }
