@@ -109,3 +109,24 @@ CREATE TABLE PlaylistItems (
         FOREIGN KEY (MediaItemId) REFERENCES MediaItems (Id)
 );
 CREATE INDEX IX_PlaylistItems_MediaItemId ON PlaylistItems (MediaItemId);
+
+/* Genres */
+CREATE TABLE Genres (
+    Id          UNIQUEIDENTIFIER NOT NULL,
+    Name        NVARCHAR(MAX)    NOT NULL,
+    Description NVARCHAR(MAX)    NOT NULL,
+    CONSTRAINT PK_Genres PRIMARY KEY (Id)
+);
+
+/* MediaGenres (khoa chinh kep) */
+CREATE TABLE MediaGenres (
+    MediaItemId UNIQUEIDENTIFIER NOT NULL,
+    GenreId     UNIQUEIDENTIFIER NOT NULL,
+    AddedAt     DATETIME2        NOT NULL,
+    CONSTRAINT PK_MediaGenres PRIMARY KEY (MediaItemId, GenreId),
+    CONSTRAINT FK_MediaGenres_MediaItems_MediaItemId
+        FOREIGN KEY (MediaItemId) REFERENCES MediaItems (Id) ON DELETE CASCADE,
+    CONSTRAINT FK_MediaGenres_Genres_GenreId
+        FOREIGN KEY (GenreId) REFERENCES Genres (Id) ON DELETE CASCADE
+);
+CREATE INDEX IX_MediaGenres_GenreId ON MediaGenres (GenreId);
