@@ -2,8 +2,6 @@ using TuneVault.Domain.Entities;
 
 namespace TuneVault.Application.Interfaces;
 
-// Hop dong day du cho MediaItem (ca DOC va GHI), duoc Dapper thuc thi o tang Infrastructure.
-// Tang Application chi biet toi interface nay, khong biet Dapper hay SQL Server.
 public interface IMediaItemRepository
 {
     Task<IReadOnlyList<MediaItem>> GetAllAsync(CancellationToken cancellationToken = default);

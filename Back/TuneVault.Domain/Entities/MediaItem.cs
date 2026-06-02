@@ -15,5 +15,6 @@ namespace TuneVault.Domain.Entities
         public UserProfile Owner {get; set;} = null!;
         //trung gian
         public ICollection<PlaylistItem> PlaylistItems {get; set;} = new List<PlaylistItem>();
+        public ICollection<MediaGenre> MediaGenres { get; set; } = new List<MediaGenre>();
     }
 }
