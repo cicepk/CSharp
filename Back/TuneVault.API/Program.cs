@@ -1,18 +1,16 @@
-using Microsoft.EntityFrameworkCore;
 using TuneVault.Application.Interfaces;
 using TuneVault.Infrastructure.Data;
+using TuneVault.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // doc chuoi ket noi tu appsettings.json
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// khoi tao dbcontext voi chuoi ket noi
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
-
-builder.Services.AddScoped<IApplicationDbContext>(provider =>
-    provider.GetRequiredService<ApplicationDbContext>());
+// factory tao ket noi dung chung cho moi repository
+builder.Services.AddSingleton<ISqlConnectionFactory>(
+    new SqlConnectionFactory(connectionString!));
+builder.Services.AddScoped<IMediaItemRepository, MediaItemRepository>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TuneVault.Application.Interfaces;
 using TuneVault.Domain.Entities;
 
@@ -9,26 +8,28 @@ namespace TuneVault.API.Controllers;
 [Route("api/[controller]")]
 public class MediaItemsController : ControllerBase
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IMediaItemRepository _repository;
 
-    public MediaItemsController(IApplicationDbContext db)
+    public MediaItemsController(IMediaItemRepository repository)
     {
-        _db = db;
+        _repository = repository;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var items = await _db.MediaItems.ToListAsync();
+        var items = await _repository.GetAllAsync();
         return Ok(items);
     }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var item = await _db.MediaItems.FirstOrDefaultAsync(m => m.Id == id);
+        var item = await _repository.GetByIdAsync(id);
         if (item == null)
+        {
             return NotFound();
+        }
 
         return Ok(item);
     }
@@ -37,11 +38,43 @@ public class MediaItemsController : ControllerBase
     public async Task<IActionResult> Create([FromBody] MediaItem mediaItem)
     {
         if (mediaItem == null)
+        {
             return BadRequest();
+        }
 
-        await _db.MediaItems.AddAsync(mediaItem);
-        await _db.SaveChangesAsync();
-
+        await _repository.AddAsync(mediaItem);
         return CreatedAtAction(nameof(GetById), new { id = mediaItem.Id }, mediaItem);
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] MediaItem mediaItem)
+    {
+        if (mediaItem == null)
+        {
+            return BadRequest();
+        }
+
+        // dam bao Id tren route khop voi ban ghi can cap nhat
+        mediaItem.Id = id;
+
+        var updated = await _repository.UpdateAsync(mediaItem);
+        if (updated == false)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var deleted = await _repository.DeleteAsync(id);
+        if (deleted == false)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
     }
 }
