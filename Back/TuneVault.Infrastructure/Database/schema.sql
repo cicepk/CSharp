@@ -130,3 +130,20 @@ CREATE TABLE MediaGenres (
         FOREIGN KEY (GenreId) REFERENCES Genres (Id) ON DELETE CASCADE
 );
 CREATE INDEX IX_MediaGenres_GenreId ON MediaGenres (GenreId);
+
+/* PlayHistory */
+CREATE TABLE PlayHistory (
+    Id                      UNIQUEIDENTIFIER NOT NULL,
+    UserId                  UNIQUEIDENTIFIER NOT NULL,
+    MediaItemId             UNIQUEIDENTIFIER NOT NULL,
+    PlayedAt                DATETIME2        NOT NULL,
+    DurationSeconds   INT              NULL,
+    CONSTRAINT PK_PlayHistory PRIMARY KEY (Id),
+    CONSTRAINT FK_PlayHistory_UserProfiles_UserId
+        FOREIGN KEY (UserId) REFERENCES UserProfiles (Id) ON DELETE CASCADE,
+    CONSTRAINT FK_PlayHistory_MediaItems_MediaItemId
+        FOREIGN KEY (MediaItemId) REFERENCES MediaItems (Id) ON DELETE CASCADE
+);
+CREATE INDEX IX_PlayHistory_UserId ON PlayHistory (UserId);
+CREATE INDEX IX_PlayHistory_MediaItemId ON PlayHistory (MediaItemId);
+CREATE INDEX IX_PlayHistory_PlayedAt ON PlayHistory (PlayedAt);
