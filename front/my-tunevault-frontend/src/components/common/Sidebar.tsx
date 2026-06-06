@@ -1,10 +1,8 @@
 import { NavLink } from 'react-router-dom';
-import { useMusic } from '../../hooks/MusicContext';
-import playButtonImg from '../../assets/icons/play-button.png';
-import pauseImg from '../../assets/icons/pause.png';
+
 
 export default function Sidebar() {
-  const { currentSong, isPlaying, togglePlayPause } = useMusic();
+  
   return (
     <aside style={{
       display: 'flex',
