@@ -142,7 +142,7 @@ CREATE TABLE PlayHistory (
     CONSTRAINT FK_PlayHistory_UserProfiles_UserId
         FOREIGN KEY (UserId) REFERENCES UserProfiles (Id) ON DELETE CASCADE,
     CONSTRAINT FK_PlayHistory_MediaItems_MediaItemId
-        FOREIGN KEY (MediaItemId) REFERENCES MediaItems (Id) ON DELETE CASCADE
+        FOREIGN KEY (MediaItemId) REFERENCES MediaItems (Id) ON DELETE NO ACTION
 );
 CREATE INDEX IX_PlayHistory_UserId ON PlayHistory (UserId);
 CREATE INDEX IX_PlayHistory_MediaItemId ON PlayHistory (MediaItemId);

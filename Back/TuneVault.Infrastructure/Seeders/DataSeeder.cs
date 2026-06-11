@@ -1,10 +1,10 @@
 using Dapper;
 using System.Data;
+using TuneVault.Application.Interfaces;
 using TuneVault.Infrastructure.Data;
 
 namespace TuneVault.Infrastructure.Seeders;
 
-/// Implementation seeder với Dapper
 public class DataSeeder : IDataSeeder
 {
     private readonly ISqlConnectionFactory _connectionFactory;
