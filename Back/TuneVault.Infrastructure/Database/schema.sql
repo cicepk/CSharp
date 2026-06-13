@@ -1,10 +1,11 @@
 
 /* UserProfiles */
 CREATE TABLE UserProfiles (
-    Id          UNIQUEIDENTIFIER NOT NULL,
-    UserName    NVARCHAR(MAX)    NOT NULL,
-    Email       NVARCHAR(MAX)    NOT NULL,
-    CreatedAt   DATETIME2        NOT NULL,
+    Id           UNIQUEIDENTIFIER NOT NULL,
+    UserName     NVARCHAR(MAX)    NOT NULL,
+    Email        NVARCHAR(MAX)    NOT NULL,
+    PasswordHash NVARCHAR(MAX)    NULL,
+    CreatedAt    DATETIME2        NOT NULL,
     CONSTRAINT PK_UserProfiles PRIMARY KEY (Id)
 );
 

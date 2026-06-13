@@ -23,6 +23,7 @@ builder.Services.AddScoped<IFavouriteRepository, FavouriteRepository>();
 builder.Services.AddScoped<IFollowRepository, FollowRepository>();
 builder.Services.AddScoped<IMediaShareRepository, MediaShareRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IPlayHistoryRepository, PlayHistoryRepository>();
 
 // Services
 builder.Services.AddScoped<IJwtService, JwtService>();
@@ -89,7 +90,10 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
+
+app.UseStaticFiles();
 app.UseCors("ReactApp");
 app.UseAuthentication();
 app.UseAuthorization();

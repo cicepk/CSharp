@@ -1,4 +1,15 @@
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+
 export default function Header() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <header style={{
       display: 'flex',
@@ -13,25 +24,26 @@ export default function Header() {
           margin: 0,
           color: '#fff'
         }}>
-          Welcome Back!
+          Welcome Back, {user?.username || 'User'}!
         </h2>
       </div>
-      <div>
+      <div style={{ display: 'flex', gap: '1rem' }}>
         <button style={{
-          backgroundColor: '#1db954',
-          color: '#000',
+          backgroundColor: '#282828',
+          color: '#fff',
           padding: '0.5rem 1.5rem',
-          border: 'none',
+          border: '1px solid #404040',
           borderRadius: '9999px',
           fontWeight: 'bold',
           cursor: 'pointer',
-          fontSize: '1rem',
-          transition: 'background-color 0.2s'
+          fontSize: '0.875rem',
+          transition: 'all 0.2s'
         }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1ed760'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1db954'}
+        onClick={handleLogout}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1db954'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#282828'}
         >
-          👤 Profile
+          Logout
         </button>
       </div>
     </header>

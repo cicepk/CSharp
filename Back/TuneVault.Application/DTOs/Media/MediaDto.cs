@@ -33,6 +33,9 @@ public class MediaDto
     /// </summary>
     public string FilePath { get; set; } = string.Empty;
 
+    // URL ảnh bìa (/music/images/cover-N.jpg)
+    public string? CoverPath { get; set; }
+
     // Ngày upload (UTC)
     public DateTime CreatedAt { get; set; }
 }

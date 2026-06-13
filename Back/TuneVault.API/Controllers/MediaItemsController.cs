@@ -33,24 +33,29 @@ public class MediaItemsController : ControllerBase
         return Guid.TryParse(claim?.Value, out var id) ? id : Guid.Empty;
     }
 
-    private static MediaDto ToDto(MediaItem item) => new()
+    private MediaDto ToDto(MediaItem item)
     {
-        Id = item.Id,
-        Title = item.Title,
-        Artist = item.Artist,
-        MediaType = (int)item.MediaType,
-        DurationSeconds = item.DurationSeconds,
-        OwnerId = item.OwnerId,
-        FilePath = $"/api/mediaitems/{item.Id}/stream",
-        CreatedAt = item.CreatedAt
-    };
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        return new MediaDto
+        {
+            Id = item.Id,
+            Title = item.Title,
+            Artist = item.Artist,
+            MediaType = (int)item.MediaType,
+            DurationSeconds = item.DurationSeconds,
+            OwnerId = item.OwnerId,
+            FilePath = $"{baseUrl}/api/mediaitems/{item.Id}/stream",
+            CoverPath = item.CoverPath != null ? $"{baseUrl}{item.CoverPath}" : null,
+            CreatedAt = item.CreatedAt
+        };
+    }
 
     // GET /api/mediaitems — Lấy tất cả media
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var items = await _mediaRepo.GetAllAsync(ct);
-        var dtos = items.Select(ToDto).ToList();
+        var dtos = items.Select(x => ToDto(x)).ToList();
         return Ok(ApiResponse<List<MediaDto>>.SuccessResponse(dtos));
     }
 

@@ -16,7 +16,7 @@ public class MediaItemRepository : IMediaItemRepository
     public async Task<IReadOnlyList<MediaItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            SELECT Id, Title, Artist, FilePath, MediaType, DurationSeconds, CreatedAt, OwnerId
+            SELECT Id, Title, Artist, FilePath, CoverPath, MediaType, DurationSeconds, CreatedAt, OwnerId
             FROM MediaItems";
 
         using (var connection = _connectionFactory.CreateConnection())
@@ -46,8 +46,8 @@ public class MediaItemRepository : IMediaItemRepository
     public async Task AddAsync(MediaItem mediaItem, CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            INSERT INTO MediaItems (Id, Title, Artist, FilePath, MediaType, DurationSeconds, CreatedAt, OwnerId)
-            VALUES (@Id, @Title, @Artist, @FilePath, @MediaType, @DurationSeconds, @CreatedAt, @OwnerId)";
+            INSERT INTO MediaItems (Id, Title, Artist, FilePath, CoverPath, MediaType, DurationSeconds, CreatedAt, OwnerId)
+            VALUES (@Id, @Title, @Artist, @FilePath, @CoverPath, @MediaType, @DurationSeconds, @CreatedAt, @OwnerId)";
 
         using (var connection = _connectionFactory.CreateConnection())
         {
@@ -63,6 +63,7 @@ public class MediaItemRepository : IMediaItemRepository
             SET Title = @Title,
                 Artist = @Artist,
                 FilePath = @FilePath,
+                CoverPath = @CoverPath,
                 MediaType = @MediaType,
                 DurationSeconds = @DurationSeconds,
                 OwnerId = @OwnerId

@@ -35,8 +35,6 @@ public class AuthController : ControllerBase
             errors.Add("Password must contain at least 1 uppercase letter");
         if (!request.Password.Any(char.IsDigit))
             errors.Add("Password must contain at least 1 digit");
-        if (request.Password != request.ConfirmPassword)
-            errors.Add("Passwords do not match");
 
         if (errors.Count > 0)
             return BadRequest(ApiResponse<object>.ErrorResponse(errors.ToArray(), "Validation failed"));

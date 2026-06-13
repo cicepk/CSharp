@@ -11,14 +11,17 @@ export default function Artist() {
         marginBottom: '1.5rem',
         color: '#fff'
       }}>
-        Artist: {id}
+        Artist Profile
       </h2>
       <div style={{
         backgroundColor: '#282828',
         padding: '1.5rem',
         borderRadius: '8px'
       }}>
-        <p style={{ color: '#b3b3b3', margin: 0 }}>Loading artist information...</p>
+        <p style={{ color: '#b3b3b3', margin: 0 }}>Artist details for {id}</p>
+        <p style={{ color: '#b3b3b3', fontSize: '0.875rem', marginTop: '1rem' }}>
+          Coming soon - Artist details will be displayed here
+        </p>
       </div>
     </div>
   );

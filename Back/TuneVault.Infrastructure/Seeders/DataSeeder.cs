@@ -105,24 +105,24 @@ public class DataSeeder : IDataSeeder
         }
     }
 
-    /// Seed 2 users
+    /// Seed 2 users (password: Password123)
     private async Task SeedUsersAsync(IDbConnection connection, IDbTransaction transaction)
     {
         const string sql = @"
-            INSERT INTO UserProfiles (Id, UserName, Email, CreatedAt)
-            VALUES (@Id, @UserName, @Email, @CreatedAt)";
+            INSERT INTO UserProfiles (Id, UserName, Email, PasswordHash, CreatedAt)
+            VALUES (@Id, @UserName, @Email, @PasswordHash, @CreatedAt)";
 
-        // Tạo list users
+        // Password chung cho cả 2 users: Password123
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword("Password123");
+
         var users = new List<(Guid id, string userName, string email, DateTime createdAt)>
         {
-            // User 1: Admin
             (
                 new Guid("550e8400-e29b-41d4-a716-446655440001"),
                 "admin",
                 "admin@tunevault.com",
                 new DateTime(2026, 1, 1, 10, 0, 0)
             ),
-            // User 2: Regular user
             (
                 new Guid("550e8400-e29b-41d4-a716-446655440002"),
                 "john_music",
@@ -131,7 +131,6 @@ public class DataSeeder : IDataSeeder
             )
         };
 
-        // Insert từng user
         foreach (var user in users)
         {
             var parameters = new
@@ -139,6 +138,7 @@ public class DataSeeder : IDataSeeder
                 Id = user.id,
                 UserName = user.userName,
                 Email = user.email,
+                PasswordHash = passwordHash,
                 CreatedAt = user.createdAt
             };
 
@@ -160,14 +160,14 @@ public class DataSeeder : IDataSeeder
         // Tạo list media items
         var mediaItems = new List<dynamic>
         {
-            // ===== AUDIO ITEMS (MediaType = 0) =====
+            // ===== AUDIO ITEMS (MediaType = 1) =====
             new
             {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440001"),
                 Title = "Blinding Lights",
                 Artist = "The Weeknd",
                 FilePath = "/music/audio/blinding-lights.mp3",
-                MediaType = 0,  // Audio
+                MediaType = 1,  // Audio
                 DurationSeconds = 200,
                 CreatedAt = new DateTime(2026, 1, 10, 8, 0, 0),
                 OwnerId = adminId
@@ -178,7 +178,7 @@ public class DataSeeder : IDataSeeder
                 Title = "Shape of You",
                 Artist = "Ed Sheeran",
                 FilePath = "/music/audio/shape-of-you.mp3",
-                MediaType = 0,
+                MediaType = 1,
                 DurationSeconds = 234,
                 CreatedAt = new DateTime(2026, 1, 11, 9, 30, 0),
                 OwnerId = adminId
@@ -189,7 +189,7 @@ public class DataSeeder : IDataSeeder
                 Title = "Uptown Funk",
                 Artist = "Mark Ronson ft. Bruno Mars",
                 FilePath = "/music/audio/uptown-funk.mp3",
-                MediaType = 0,
+                MediaType = 1,
                 DurationSeconds = 269,
                 CreatedAt = new DateTime(2026, 1, 12, 10, 15, 0),
                 OwnerId = adminId
@@ -200,7 +200,7 @@ public class DataSeeder : IDataSeeder
                 Title = "Perfect",
                 Artist = "Ed Sheeran",
                 FilePath = "/music/audio/perfect.mp3",
-                MediaType = 0,
+                MediaType = 1,
                 DurationSeconds = 263,
                 CreatedAt = new DateTime(2026, 1, 13, 11, 0, 0),
                 OwnerId = adminId
@@ -211,7 +211,7 @@ public class DataSeeder : IDataSeeder
                 Title = "Bohemian Rhapsody",
                 Artist = "Queen",
                 FilePath = "/music/audio/bohemian-rhapsody.mp3",
-                MediaType = 0,
+                MediaType = 1,
                 DurationSeconds = 354,
                 CreatedAt = new DateTime(2026, 1, 14, 12, 30, 0),
                 OwnerId = adminId
@@ -222,20 +222,20 @@ public class DataSeeder : IDataSeeder
                 Title = "Hotel California",
                 Artist = "Eagles",
                 FilePath = "/music/audio/hotel-california.mp3",
-                MediaType = 0,
+                MediaType = 1,
                 DurationSeconds = 391,
                 CreatedAt = new DateTime(2026, 1, 15, 13, 45, 0),
                 OwnerId = adminId
             },
 
-            // ===== VIDEO ITEMS (MediaType = 1) =====
+            // ===== VIDEO ITEMS (MediaType = 2) =====
             new
             {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440007"),
                 Title = "Levitating - Official Music Video",
                 Artist = "Dua Lipa",
                 FilePath = "/music/video/levitating-mv.mp4",
-                MediaType = 1,  // Video
+                MediaType = 2,  // Video
                 DurationSeconds = 203,
                 CreatedAt = new DateTime(2026, 1, 16, 14, 0, 0),
                 OwnerId = adminId
@@ -246,7 +246,7 @@ public class DataSeeder : IDataSeeder
                 Title = "As It Was - Live Performance",
                 Artist = "Harry Styles",
                 FilePath = "/music/video/as-it-was-live.mp4",
-                MediaType = 1,
+                MediaType = 2,
                 DurationSeconds = 180,
                 CreatedAt = new DateTime(2026, 1, 17, 15, 20, 0),
                 OwnerId = adminId
@@ -257,7 +257,7 @@ public class DataSeeder : IDataSeeder
                 Title = "Setlist Concert 2025",
                 Artist = "Taylor Swift",
                 FilePath = "/music/video/taylor-concert-2025.mp4",
-                MediaType = 1,
+                MediaType = 2,
                 DurationSeconds = 5400,
                 CreatedAt = new DateTime(2026, 1, 18, 16, 30, 0),
                 OwnerId = adminId
@@ -268,7 +268,7 @@ public class DataSeeder : IDataSeeder
                 Title = "Making Of Album - Behind The Scenes",
                 Artist = "The Weeknd",
                 FilePath = "/music/video/weeknd-bts.mp4",
-                MediaType = 1,
+                MediaType = 2,
                 DurationSeconds = 720,
                 CreatedAt = new DateTime(2026, 1, 19, 17, 15, 0),
                 OwnerId = adminId
@@ -325,31 +325,32 @@ public class DataSeeder : IDataSeeder
     private async Task SeedPlaylistItemsAsync(IDbConnection connection, IDbTransaction transaction)
     {
         const string sql = @"
-            INSERT INTO PlaylistItems (PlaylistId, MediaItemId, AddedAt)
-            VALUES (@PlaylistId, @MediaItemId, @AddedAt)";
+            INSERT INTO PlaylistItems (Id, PlaylistId, MediaItemId, AddedAt)
+            VALUES (@Id, @PlaylistId, @MediaItemId, @AddedAt)";
 
         var playlist1 = new Guid("770e8400-e29b-41d4-a716-446655440001");
         var playlist2 = new Guid("770e8400-e29b-41d4-a716-446655440002");
 
-        var playlistItems = new List<(Guid playlistId, Guid mediaItemId, DateTime addedAt)>
+        var playlistItems = new List<(Guid id, Guid playlistId, Guid mediaItemId, DateTime addedAt)>
         {
             // Playlist 1: Pop Hits
-            (playlist1, new Guid("660e8400-e29b-41d4-a716-446655440001"), new DateTime(2026, 1, 20, 8, 0, 0)),
-            (playlist1, new Guid("660e8400-e29b-41d4-a716-446655440002"), new DateTime(2026, 1, 20, 8, 5, 0)),
-            (playlist1, new Guid("660e8400-e29b-41d4-a716-446655440003"), new DateTime(2026, 1, 20, 8, 10, 0)),
-            (playlist1, new Guid("660e8400-e29b-41d4-a716-446655440007"), new DateTime(2026, 1, 20, 8, 15, 0)),
-            (playlist1, new Guid("660e8400-e29b-41d4-a716-446655440008"), new DateTime(2026, 1, 20, 8, 20, 0)),
+            (Guid.NewGuid(), playlist1, new Guid("660e8400-e29b-41d4-a716-446655440001"), new DateTime(2026, 1, 20, 8, 0, 0)),
+            (Guid.NewGuid(), playlist1, new Guid("660e8400-e29b-41d4-a716-446655440002"), new DateTime(2026, 1, 20, 8, 5, 0)),
+            (Guid.NewGuid(), playlist1, new Guid("660e8400-e29b-41d4-a716-446655440003"), new DateTime(2026, 1, 20, 8, 10, 0)),
+            (Guid.NewGuid(), playlist1, new Guid("660e8400-e29b-41d4-a716-446655440007"), new DateTime(2026, 1, 20, 8, 15, 0)),
+            (Guid.NewGuid(), playlist1, new Guid("660e8400-e29b-41d4-a716-446655440008"), new DateTime(2026, 1, 20, 8, 20, 0)),
 
             // Playlist 2: Chill & Relax
-            (playlist2, new Guid("660e8400-e29b-41d4-a716-446655440004"), new DateTime(2026, 1, 21, 9, 30, 0)),
-            (playlist2, new Guid("660e8400-e29b-41d4-a716-446655440005"), new DateTime(2026, 1, 21, 9, 35, 0)),
-            (playlist2, new Guid("660e8400-e29b-41d4-a716-446655440006"), new DateTime(2026, 1, 21, 9, 40, 0))
+            (Guid.NewGuid(), playlist2, new Guid("660e8400-e29b-41d4-a716-446655440004"), new DateTime(2026, 1, 21, 9, 30, 0)),
+            (Guid.NewGuid(), playlist2, new Guid("660e8400-e29b-41d4-a716-446655440005"), new DateTime(2026, 1, 21, 9, 35, 0)),
+            (Guid.NewGuid(), playlist2, new Guid("660e8400-e29b-41d4-a716-446655440006"), new DateTime(2026, 1, 21, 9, 40, 0))
         };
 
         foreach (var item in playlistItems)
         {
             var parameters = new
             {
+                Id = item.id,
                 PlaylistId = item.playlistId,
                 MediaItemId = item.mediaItemId,
                 AddedAt = item.addedAt
@@ -479,7 +480,7 @@ public class DataSeeder : IDataSeeder
             {
                 Id = new Guid("990e8400-e29b-41d4-a716-446655440001"),
                 UserId = johnId,
-                Type = 0,  // Share notification
+                Type = 1,  // Shared = 1
                 Message = "admin shared \"Blinding Lights\" with you",
                 IsRead = 0,
                 CreatedAt = new DateTime(2026, 1, 27, 13, 5, 0)
@@ -489,7 +490,7 @@ public class DataSeeder : IDataSeeder
             {
                 Id = new Guid("990e8400-e29b-41d4-a716-446655440002"),
                 UserId = adminId,
-                Type = 1,  // Follow notification
+                Type = 2,  // Followed = 2
                 Message = "john_music is now following you",
                 IsRead = 0,
                 CreatedAt = new DateTime(2026, 1, 26, 12, 5, 0)

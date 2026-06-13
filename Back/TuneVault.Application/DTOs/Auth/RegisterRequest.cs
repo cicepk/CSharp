@@ -14,7 +14,4 @@ public class RegisterRequest
 
     // Mật khẩu (tối thiểu 8 ký tự, 1 chữ hoa, 1 số)
     public string Password { get; set; } = string.Empty;
-
-    // Xác nhận mật khẩu (phải bằng Password)
-    public string ConfirmPassword { get; set; } = string.Empty;
 }
