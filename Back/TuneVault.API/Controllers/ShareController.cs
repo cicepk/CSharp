@@ -1,169 +1,93 @@
-using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TuneVault.Application.DTOs.Common;
+using System.Security.Claims;
+using TuneVault.Application.Common;
 using TuneVault.Application.DTOs.Share;
-using TuneVault.Application.Interfaces;
-using TuneVault.Domain.Entities;
-using TuneVault.Domain.Enums;
+using TuneVault.Application.Features.Share;
+using TuneVault.Application.Features.Share.Queries;
 
-namespace TuneVault.API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
-[Authorize]
-public class ShareController : ControllerBase
+namespace TuneVault.API.Controllers
 {
-    private readonly IMediaShareRepository _shareRepo;
-    private readonly IMediaItemRepository _mediaRepo;
-    private readonly IUserRepository _userRepo;
-    private readonly INotificationRepository _notificationRepo;
-
-    public ShareController(
-        IMediaShareRepository shareRepo,
-        IMediaItemRepository mediaRepo,
-        IUserRepository userRepo,
-        INotificationRepository notificationRepo)
+    [Authorize]
+    [ApiController]
+    [Route("api/share")]
+    public class ShareController : ControllerBase
     {
-        _shareRepo = shareRepo;
-        _mediaRepo = mediaRepo;
-        _userRepo = userRepo;
-        _notificationRepo = notificationRepo;
-    }
+        private readonly IMediator _mediator;
 
-    private Guid GetCurrentUserId()
-    {
-        var claim = User.FindFirst("userId") ?? User.FindFirst(ClaimTypes.NameIdentifier);
-        return Guid.TryParse(claim?.Value, out var id) ? id : Guid.Empty;
-    }
-
-    private static MediaShareDto ToDto(MediaShare s, string senderUsername) => new()
-    {
-        Id = s.Id,
-        MediaItemId = s.MediaItemId,
-        PlaylistId = null,
-        SharedByUserId = s.SharedByUserId,
-        SharedByUsername = senderUsername,
-        SharedToUserId = s.SharedToUserId,
-        SharedAt = s.SharedAt
-    };
-
-    // POST /api/share — Chia sẻ media cho user khác
-    [HttpPost]
-    public async Task<IActionResult> Share([FromBody] ShareMediaRequest request, CancellationToken ct)
-    {
-        var senderId = GetCurrentUserId();
-
-        // Validation
-        var errors = new List<string>();
-        if (request.ReceiverUserId == Guid.Empty)
-            errors.Add("ReceiverUserId is required");
-        if (request.MediaItemId == null && request.PlaylistId == null)
-            errors.Add("Either MediaItemId or PlaylistId must be provided");
-        if (request.MediaItemId != null && request.PlaylistId != null)
-            errors.Add("Cannot share both MediaItem and Playlist at the same time");
-        if (request.ReceiverUserId == senderId)
-            errors.Add("Cannot share with yourself");
-
-        if (errors.Count > 0)
-            return BadRequest(ApiResponse<object>.ErrorResponse(errors.ToArray(), "Validation failed"));
-
-        // Verify receiver exists
-        var receiver = await _userRepo.GetByIdAsync(request.ReceiverUserId, ct);
-        if (receiver == null)
-            return NotFound(ApiResponse<object>.ErrorResponse("Receiver user not found"));
-
-        // Verify media exists (only mediaItemId support)
-        if (request.MediaItemId != null)
+        public ShareController(IMediator mediator)
         {
-            var media = await _mediaRepo.GetByIdAsync(request.MediaItemId.Value, ct);
-            if (media == null)
-                return NotFound(ApiResponse<object>.ErrorResponse("Media not found"));
-
-            // Check duplicate share
-            var alreadyShared = await _shareRepo.ExistsAsync(request.MediaItemId.Value, senderId, request.ReceiverUserId, ct);
-            if (alreadyShared)
-                return Conflict(ApiResponse<object>.ErrorResponse("You already shared this media with this user"));
-
-            var share = new MediaShare
-            {
-                Id = Guid.NewGuid(),
-                MediaItemId = request.MediaItemId.Value,
-                SharedByUserId = senderId,
-                SharedToUserId = request.ReceiverUserId,
-                SharedAt = DateTime.UtcNow
-            };
-
-            var shareId = await _shareRepo.CreateAsync(share, ct);
-
-            // Get sender info for notification
-            var sender = await _userRepo.GetByIdAsync(senderId, ct);
-            var senderName = sender?.UserName ?? "Someone";
-
-            // Create notification for receiver
-            var notification = new Notification
-            {
-                Id = Guid.NewGuid(),
-                UserId = request.ReceiverUserId,
-                Type = NotificationType.Shared,
-                Message = $"{senderName} shared \"{media.Title}\" with you",
-                IsRead = false,
-                CreatedAt = DateTime.UtcNow
-            };
-            await _notificationRepo.CreateAsync(notification, ct);
-
-            share.Id = shareId;
-            return CreatedAtAction(nameof(GetSharedWithMe),
-                ApiResponse<MediaShareDto>.SuccessResponse(ToDto(share, senderName), "Shared successfully"));
+            _mediator = mediator;
         }
 
-        return BadRequest(ApiResponse<object>.ErrorResponse("Playlist sharing not yet implemented"));
-    }
-
-    // GET /api/share/inbox — Nhận danh sách media được chia sẻ cho mình
-    [HttpGet("inbox")]
-    public async Task<IActionResult> GetSharedWithMe(CancellationToken ct)
-    {
-        var userId = GetCurrentUserId();
-        var shares = await _shareRepo.GetSharedWithMeAsync(userId, ct);
-
-        var dtos = new List<MediaShareDto>();
-        foreach (var s in shares)
+        private Guid? GetCurrentUserId()
         {
-            var sender = await _userRepo.GetByIdAsync(s.SharedByUserId, ct);
-            dtos.Add(ToDto(s, sender?.UserName ?? "Unknown"));
+            var raw = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return Guid.TryParse(raw, out var id) ? id : null;
         }
 
-        return Ok(ApiResponse<List<MediaShareDto>>.SuccessResponse(dtos));
-    }
+        /// <summary>
+        /// Chia sẻ bài hát hoặc playlist cho user khác.
+        /// POST /api/share
+        /// </summary>
+        [HttpPost]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), 200)]
+        [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+        [ProducesResponseType(401)]
+        public async Task<IActionResult> ShareMedia([FromBody] ShareMediaRequest request)
+        {
+            var senderId = GetCurrentUserId();
+            if (senderId is null)
+                return Unauthorized(ApiResponse<object>.SetFailure(new() { "Token không hợp lệ hoặc đã hết hạn." }));
 
-    // GET /api/share/sent — Danh sách media đã chia sẻ
-    [HttpGet("sent")]
-    public async Task<IActionResult> GetSharedByMe(CancellationToken ct)
-    {
-        var userId = GetCurrentUserId();
-        var shares = await _shareRepo.GetSharedByMeAsync(userId, ct);
+            var command = new ShareMediaCommand
+            {
+                SenderId       = senderId.Value,
+                ReceiverUserId = request.ReceiverUserId,
+                MediaItemId    = request.MediaItemId,
+                PlaylistId     = request.PlaylistId
+            };
 
-        var sender = await _userRepo.GetByIdAsync(userId, ct);
-        var senderName = sender?.UserName ?? "Unknown";
+            var shareId = await _mediator.Send(command);
+            return Ok(ApiResponse<Guid>.SetSuccess(shareId, "Chia sẻ thành công!"));
+        }
 
-        var dtos = shares.Select(s => ToDto(s, senderName)).ToList();
-        return Ok(ApiResponse<List<MediaShareDto>>.SuccessResponse(dtos));
-    }
+        /// <summary>
+        /// Xem danh sách media được chia sẻ đến tôi.
+        /// GET /api/share/inbox
+        /// </summary>
+        [HttpGet("inbox")]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<MediaShareDto>>), 200)]
+        public async Task<IActionResult> GetInbox()
+        {
+            var userId = GetCurrentUserId();
+            if (userId is null)
+                return Unauthorized(ApiResponse<object>.SetFailure(new() { "Token không hợp lệ hoặc đã hết hạn." }));
 
-    // DELETE /api/share/{id} — Xóa share record
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
-    {
-        var share = await _shareRepo.GetByIdAsync(id, ct);
-        if (share == null)
-            return NotFound(ApiResponse<object>.ErrorResponse("Share record not found"));
+            var query = new GetShareInboxQuery { UserId = userId.Value };
+            var result = await _mediator.Send(query);
 
-        var userId = GetCurrentUserId();
-        if (share.SharedByUserId != userId && share.SharedToUserId != userId)
-            return Forbid();
+            return Ok(ApiResponse<IEnumerable<MediaShareDto>>.SetSuccess(result, "Lấy danh sách chia sẻ thành công."));
+        }
 
-        await _shareRepo.DeleteAsync(id, ct);
-        return NoContent();
+        /// <summary>
+        /// Xem danh sách media tôi đã chia sẻ đi.
+        /// GET /api/share/sent
+        /// </summary>
+        [HttpGet("sent")]
+        [ProducesResponseType(typeof(ApiResponse<IEnumerable<MediaShareDto>>), 200)]
+        public async Task<IActionResult> GetSent()
+        {
+            var userId = GetCurrentUserId();
+            if (userId is null)
+                return Unauthorized(ApiResponse<object>.SetFailure(new() { "Token không hợp lệ hoặc đã hết hạn." }));
+
+            var query = new GetShareSentQuery { UserId = userId.Value };
+            var result = await _mediator.Send(query);
+
+            return Ok(ApiResponse<IEnumerable<MediaShareDto>>.SetSuccess(result, "Lấy danh sách đã gửi thành công."));
+        }
     }
 }

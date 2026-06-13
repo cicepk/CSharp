@@ -11,6 +11,8 @@ public class MediaShare
 
     public Guid SharedToUserId { get; set; }
     public UserProfile SharedToUser { get; set; } = null!;
+    public Guid? PlaylistId { get; set; }
 
     public DateTime SharedAt { get; set; } = DateTime.UtcNow;
+
 }
