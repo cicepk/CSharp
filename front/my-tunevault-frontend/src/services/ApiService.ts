@@ -1,4 +1,4 @@
-import type { Song, Playlist, User } from '../types';
+import type { Song, Playlist, User, PlayHistoryItem, NotificationItem } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5067/api';
 const AUTH_TOKEN_KEY = 'auth_token';
@@ -155,6 +155,58 @@ class ApiService {
   async getPlaylist(id: string): Promise<Playlist> {
     const res = await this.fetch<ApiResponse<RawPlaylist>>(`/playlist/${id}`);
     if (!res.success || !res.data) throw new Error(res.error ?? 'Playlist not found');
+    return toPlaylist(res.data);
+  }
+
+  async addTrackToPlaylist(playlistId: string, mediaItemId: string): Promise<void> {
+    await this.fetch(`/playlist/${playlistId}/tracks`, {
+      method: 'POST',
+      body: JSON.stringify({ mediaItemId }),
+    });
+  }
+
+  async getPlayHistory(): Promise<PlayHistoryItem[]> {
+    const res = await this.fetch<ApiResponse<PlayHistoryItem[]>>('/playhistory');
+    if (!res.success) return [];
+    return res.data ?? [];
+  }
+
+  async recordPlay(mediaItemId: string): Promise<void> {
+    await this.fetch('/playhistory', {
+      method: 'POST',
+      body: JSON.stringify({ mediaItemId, durationSeconds: 0 }),
+    });
+  }
+
+  // Notifications
+  async getNotifications(unreadOnly = false): Promise<NotificationItem[]> {
+    const res = await this.fetch<ApiResponse<NotificationItem[]>>(
+      `/notification${unreadOnly ? '?unreadOnly=true' : ''}`
+    );
+    if (!res.success) return [];
+    return res.data ?? [];
+  }
+
+  async getUnreadNotificationCount(): Promise<number> {
+    const res = await this.fetch<ApiResponse<{ count: number }>>('/notification/unread-count');
+    if (!res.success || !res.data) return 0;
+    return res.data.count;
+  }
+
+  async markNotificationRead(id: string): Promise<void> {
+    await this.fetch(`/notification/${id}/read`, { method: 'PUT' });
+  }
+
+  async markAllNotificationsRead(): Promise<void> {
+    await this.fetch('/notification/read-all', { method: 'PUT' });
+  }
+
+  async createPlaylist(name: string): Promise<Playlist> {
+    const res = await this.fetch<ApiResponse<RawPlaylist>>('/playlist', {
+      method: 'POST',
+      body: JSON.stringify({ name, isPublic: false }),
+    });
+    if (!res.success || !res.data) throw new Error(res.error ?? 'Failed to create playlist');
     return toPlaylist(res.data);
   }
 }

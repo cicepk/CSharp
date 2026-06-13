@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useRef, useState, useCallback } from 'react';
 import type { Song } from '../types';
+import apiService from '../services/ApiService';
 
 interface MusicContextType {
   currentSong: Song | null;
@@ -9,12 +10,16 @@ interface MusicContextType {
   audioRef: React.RefObject<HTMLAudioElement | null>;
   queue: Song[];
   queueIndex: number;
+  isRepeat: boolean;
+  isShuffle: boolean;
   playSong: (song: Song) => void;
   pauseSong: () => void;
   togglePlayPause: () => void;
   setQueue: (songs: Song[], startIndex: number) => void;
   playNext: () => void;
   playPrevious: () => void;
+  toggleRepeat: () => void;
+  toggleShuffle: () => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
@@ -27,6 +32,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [duration, setDuration] = useState(0);
   const [queue, setQueueState] = useState<Song[]>([]);
   const [queueIndex, setQueueIndex] = useState(-1);
+  const [isRepeat, setIsRepeat] = useState(false);
+  const [isShuffle, setIsShuffle] = useState(false);
 
   const playSongAtIndex = useCallback((songs: Song[], index: number) => {
     const song = songs[index];
@@ -36,6 +43,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setCurrentSong(song);
     setIsPlaying(true);
     setQueueIndex(index);
+    apiService.recordPlay(song.id).catch(() => {});
   }, []);
 
   const playSong = useCallback((song: Song) => {
@@ -44,6 +52,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
+      if (currentSong?.id !== song.id) {
+        apiService.recordPlay(song.id).catch(() => {});
+      }
       audioRef.current.src = song.url;
       audioRef.current.play();
       setCurrentSong(song);
@@ -56,11 +67,22 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     playSongAtIndex(songs, startIndex);
   }, [playSongAtIndex]);
 
+  const toggleRepeat = useCallback(() => setIsRepeat(r => !r), []);
+  const toggleShuffle = useCallback(() => setIsShuffle(s => !s), []);
+
   const playNext = useCallback(() => {
     if (queue.length === 0) return;
-    const nextIndex = (queueIndex + 1) % queue.length;
+    let nextIndex: number;
+    if (isShuffle) {
+      // pick a random index different from current
+      let rand = Math.floor(Math.random() * queue.length);
+      if (queue.length > 1 && rand === queueIndex) rand = (rand + 1) % queue.length;
+      nextIndex = rand;
+    } else {
+      nextIndex = (queueIndex + 1) % queue.length;
+    }
     playSongAtIndex(queue, nextIndex);
-  }, [queue, queueIndex, playSongAtIndex]);
+  }, [queue, queueIndex, isShuffle, playSongAtIndex]);
 
   const playPrevious = useCallback(() => {
     if (queue.length === 0) return;
@@ -99,16 +121,27 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audioRef,
       queue,
       queueIndex,
+      isRepeat,
+      isShuffle,
       playSong,
       pauseSong,
       togglePlayPause,
       setQueue,
       playNext,
       playPrevious,
+      toggleRepeat,
+      toggleShuffle,
     }}>
       <audio
         ref={audioRef}
-        onEnded={playNext}
+        onEnded={() => {
+          if (isRepeat && audioRef.current) {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play();
+          } else {
+            playNext();
+          }
+        }}
         onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
         onLoadedMetadata={() => setDuration(audioRef.current?.duration ?? 0)}
       />
