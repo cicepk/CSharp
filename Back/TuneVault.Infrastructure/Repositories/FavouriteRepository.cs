@@ -51,7 +51,7 @@ public class FavouriteRepository : IFavouriteRepository
     public async Task<IReadOnlyList<MediaItem>> GetByUserIdAsync(Guid userId, int limit = 50, CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            SELECT TOP (@Limit) m.Id, m.Title, m.Artist, m.FilePath, m.MediaType, m.DurationSeconds, m.CreatedAt, m.OwnerId
+            SELECT TOP (@Limit) m.Id, m.Title, m.Artist, m.FilePath, m.CoverPath, m.MediaType, m.DurationSeconds, m.CreatedAt, m.OwnerId
             FROM MediaItems m
             INNER JOIN Favourites f ON m.Id = f.MediaItemId
             WHERE f.UserId = @UserId

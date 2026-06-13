@@ -2,9 +2,9 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using TuneVault.Application.Common;
+using TuneVault.Application.DTOs.Common;
 using TuneVault.Application.DTOs.Share;
-using TuneVault.Application.Features.Share;
+using TuneVault.Application.Features.Share.Commands;
 using TuneVault.Application.Features.Share.Queries;
 
 

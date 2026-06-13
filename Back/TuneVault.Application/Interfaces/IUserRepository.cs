@@ -19,4 +19,6 @@ public interface IUserRepository
     Task<string?> GetPasswordHashAsync(Guid userId, CancellationToken cancellationToken = default);
 
     Task<bool> ExistsAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<UserProfile>> SearchAsync(string query, int limit = 10, CancellationToken cancellationToken = default);
 }

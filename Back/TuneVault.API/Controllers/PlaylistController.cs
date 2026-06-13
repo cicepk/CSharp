@@ -29,13 +29,14 @@ public class PlaylistController : ControllerBase
         return Guid.TryParse(claim?.Value, out var id) ? id : Guid.Empty;
     }
 
-    private static PlaylistDto ToDto(Playlist p, int trackCount = 0) => new()
+    private static PlaylistDto ToDto(Playlist p, int trackCount = 0, string? coverUrl = null) => new()
     {
         Id = p.Id,
         Name = p.Name,
         IsPublic = p.isPublic,
         OwnerId = p.OwnerId,
         TrackCount = trackCount,
+        CoverUrl = coverUrl,
         CreatedAt = p.CreatedAt
     };
 
@@ -45,11 +46,14 @@ public class PlaylistController : ControllerBase
     {
         var userId = GetCurrentUserId();
         var playlists = await _playlistRepo.GetByUserIdAsync(userId, ct);
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
         var dtos = new List<PlaylistDto>();
         foreach (var p in playlists)
         {
-            var count = await _playlistRepo.GetPlaylistTracksCountAsync(p.Id, ct);
-            dtos.Add(ToDto(p, count));
+            var tracks = await _playlistRepo.GetPlaylistTracksAsync(p.Id, ct);
+            var firstCover = tracks.FirstOrDefault()?.CoverPath;
+            var coverUrl = firstCover != null ? $"{baseUrl}{firstCover}" : null;
+            dtos.Add(ToDto(p, tracks.Count, coverUrl));
         }
         return Ok(ApiResponse<List<PlaylistDto>>.SuccessResponse(dtos));
     }
@@ -67,6 +71,7 @@ public class PlaylistController : ControllerBase
             return Forbid();
 
         var tracks = await _playlistRepo.GetPlaylistTracksAsync(id, ct);
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
         var trackDtos = tracks.Select(t => new MediaDto
         {
             Id = t.Id,
@@ -75,10 +80,12 @@ public class PlaylistController : ControllerBase
             MediaType = (int)t.MediaType,
             DurationSeconds = t.DurationSeconds,
             OwnerId = t.OwnerId,
-            FilePath = $"/api/mediaitems/{t.Id}/stream",
+            FilePath = $"{baseUrl}/api/mediaitems/{t.Id}/stream",
+            CoverPath = t.CoverPath != null ? $"{baseUrl}{t.CoverPath}" : null,
             CreatedAt = t.CreatedAt
         }).ToList();
 
+        var firstCover = tracks.FirstOrDefault()?.CoverPath;
         var detail = new PlaylistDetailDto
         {
             Id = playlist.Id,
@@ -86,6 +93,7 @@ public class PlaylistController : ControllerBase
             IsPublic = playlist.isPublic,
             OwnerId = playlist.OwnerId,
             TrackCount = tracks.Count,
+            CoverUrl = firstCover != null ? $"{baseUrl}{firstCover}" : null,
             CreatedAt = playlist.CreatedAt,
             Tracks = trackDtos
         };
@@ -165,6 +173,41 @@ public class PlaylistController : ControllerBase
 
         await _playlistRepo.AddTrackToPlaylistAsync(id, request.MediaItemId, ct);
         return Ok(ApiResponse<object>.SuccessResponse(null!, "Track added to playlist"));
+    }
+
+    // PATCH /api/playlist/{id}/visibility — Đổi public/private
+    [HttpPatch("{id:guid}/visibility")]
+    public async Task<IActionResult> ToggleVisibility(Guid id, [FromBody] ToggleVisibilityRequest request, CancellationToken ct)
+    {
+        var playlist = await _playlistRepo.GetByIdAsync(id, ct);
+        if (playlist == null)
+            return NotFound(ApiResponse<object>.ErrorResponse("Playlist not found"));
+
+        if (playlist.OwnerId != GetCurrentUserId())
+            return Forbid();
+
+        playlist.isPublic = request.IsPublic;
+        await _playlistRepo.UpdateAsync(playlist, ct);
+
+        return Ok(ApiResponse<object>.SuccessResponse(new { isPublic = request.IsPublic }, "Visibility updated"));
+    }
+
+    // GET /api/playlist/user/{userId}/public — Playlists công khai của 1 user
+    [HttpGet("user/{userId:guid}/public")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPublicByUser(Guid userId, CancellationToken ct)
+    {
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        var playlists = await _playlistRepo.GetPublicByUserIdAsync(userId, ct);
+        var dtos = new List<PlaylistDto>();
+        foreach (var p in playlists)
+        {
+            var tracks = await _playlistRepo.GetPlaylistTracksAsync(p.Id, ct);
+            var firstCover = tracks.FirstOrDefault()?.CoverPath;
+            var coverUrl = firstCover != null ? $"{baseUrl}{firstCover}" : null;
+            dtos.Add(ToDto(p, tracks.Count, coverUrl));
+        }
+        return Ok(ApiResponse<List<PlaylistDto>>.SuccessResponse(dtos));
     }
 
     // DELETE /api/playlist/{id}/tracks/{mediaId} — Xóa track khỏi playlist

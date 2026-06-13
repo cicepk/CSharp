@@ -19,6 +19,8 @@ public class PlaylistDto
     public Guid OwnerId { get; set; }
     // Số lượng bài hát trong playlist
     public int TrackCount { get; set; }
+    // Ảnh bìa playlist (lấy từ track đầu tiên)
+    public string? CoverUrl { get; set; }
     // Ngày tạo playlist (UTC)
     public DateTime CreatedAt { get; set; }
 }

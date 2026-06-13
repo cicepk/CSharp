@@ -11,4 +11,7 @@ public class UpdateProfileRequest
 
     // Email mới (unique, valid email)
     public string Email { get; set; } = string.Empty;
+
+    // Bio ngắn (tối đa 300 ký tự)
+    public string? Bio { get; set; }
 }

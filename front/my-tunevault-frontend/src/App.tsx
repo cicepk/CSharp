@@ -5,6 +5,7 @@ import Search from './pages/Search';
 import Library from './pages/Library';
 import Playlist from './pages/Playlist';
 import Artist from './pages/Artist';
+import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -31,6 +32,7 @@ function App() {
               <Route path="/library" element={<Library />} />
               <Route path="/playlist/:id" element={<Playlist />} />
               <Route path="/artist/:id" element={<Artist />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
           </Routes>
         </Router>

@@ -3,6 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import apiService from '../services/ApiService';
 import type { Playlist } from '../types';
 
+async function handleToggleVisibility(
+  playlist: Playlist,
+  setPlaylists: React.Dispatch<React.SetStateAction<Playlist[]>>,
+  e: React.MouseEvent
+) {
+  e.stopPropagation();
+  const newVal = !playlist.isPublic;
+  try {
+    await apiService.togglePlaylistVisibility(playlist.id, newVal);
+    setPlaylists(prev => prev.map(p => p.id === playlist.id ? { ...p, isPublic: newVal } : p));
+  } catch { /* silent */ }
+}
+
 const FALLBACK_COVER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="180" height="180"%3E%3Crect fill="%23282828" width="180" height="180"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23b3b3b3" font-size="30"%3E%F0%9F%8E%B5%3C/text%3E%3C/svg%3E';
 
 export default function Library() {
@@ -219,18 +232,40 @@ export default function Library() {
                 style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }}
                 onError={(e) => { e.currentTarget.src = FALLBACK_COVER; }}
               />
-              <div style={{ padding: '1rem' }}>
+              <div style={{ padding: '0.75rem 1rem 1rem' }}>
                 <p style={{
                   fontWeight: 'bold', fontSize: '0.875rem',
-                  margin: '0.5rem 0',
+                  margin: '0 0 4px',
                   color: '#fff',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
                   {playlist.title}
                 </p>
-                <p style={{ fontSize: '0.75rem', margin: 0, color: '#b3b3b3' }}>
-                  {playlist.trackCount ?? playlist.tracks?.length ?? 0} tracks
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                  <p style={{ fontSize: '0.75rem', margin: 0, color: '#b3b3b3' }}>
+                    {playlist.trackCount ?? playlist.tracks?.length ?? 0} tracks
+                  </p>
+                  <button
+                    onClick={(e) => handleToggleVisibility(playlist, setPlaylists, e)}
+                    title={playlist.isPublic ? 'Make private' : 'Make public'}
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      backgroundColor: playlist.isPublic ? 'rgba(29,185,84,0.2)' : 'rgba(255,255,255,0.1)',
+                      color: playlist.isPublic ? '#1db954' : '#b3b3b3',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                  >
+                    {playlist.isPublic ? 'Public' : 'Private'}
+                  </button>
+                </div>
               </div>
             </div>
           ))

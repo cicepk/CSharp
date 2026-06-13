@@ -21,4 +21,6 @@ public interface IPlaylistRepository
     Task<IReadOnlyList<MediaItem>> GetPlaylistTracksAsync(Guid playlistId, CancellationToken cancellationToken = default);
 
     Task<int> GetPlaylistTracksCountAsync(Guid playlistId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Playlist>> GetPublicByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
 }

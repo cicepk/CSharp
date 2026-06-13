@@ -26,6 +26,7 @@ const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
 export function MusicProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const lastRecordedIdRef = useRef<string | null>(null);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -43,7 +44,10 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setCurrentSong(song);
     setIsPlaying(true);
     setQueueIndex(index);
-    apiService.recordPlay(song.id).catch(() => {});
+    if (song.id !== lastRecordedIdRef.current) {
+      lastRecordedIdRef.current = song.id;
+      apiService.recordPlay(song.id).catch(() => {});
+    }
   }, []);
 
   const playSong = useCallback((song: Song) => {
@@ -52,7 +56,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      if (currentSong?.id !== song.id) {
+      if (song.id !== lastRecordedIdRef.current) {
+        lastRecordedIdRef.current = song.id;
         apiService.recordPlay(song.id).catch(() => {});
       }
       audioRef.current.src = song.url;
