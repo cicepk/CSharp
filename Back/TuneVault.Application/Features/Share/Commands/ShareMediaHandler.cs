@@ -1,20 +1,28 @@
 using MediatR;
-using TuneVault.Application.Features.Share;
+using TuneVault.Application.Features.Share.Commands;
 using TuneVault.Application.Interfaces;
+using TuneVault.Domain.Entities;
+using TuneVault.Domain.Enums;
 
-namespace TuneVault.Application.Features.Share.Handlers
+namespace TuneVault.Application.Features.Share.Commands
 {
     public class ShareMediaCommandHandler : IRequestHandler<ShareMediaCommand, Guid>
     {
         private readonly IMediaShareRepository _shareRepository;
         private readonly IUserRepository _userRepository;
+        private readonly INotificationRepository _notificationRepository;
+        private readonly INotificationPushService _pushService;
 
         public ShareMediaCommandHandler(
             IMediaShareRepository shareRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            INotificationRepository notificationRepository,
+            INotificationPushService pushService)
         {
             _shareRepository = shareRepository;
             _userRepository = userRepository;
+            _notificationRepository = notificationRepository;
+            _pushService = pushService;
         }
 
         public async Task<Guid> Handle(ShareMediaCommand command, CancellationToken cancellationToken)
@@ -59,12 +67,41 @@ namespace TuneVault.Application.Features.Share.Handlers
             if (alreadyShared)
                 throw new InvalidOperationException("Nội dung này đã được chia sẻ đến người dùng đó trước đó.");
 
-            // 4. Lưu xuống DB
+            // 4. Lưu share xuống DB
             var shareId = await _shareRepository.AddShareAsync(
                 command.SenderId,
                 command.ReceiverUserId,
                 command.MediaItemId,
                 command.PlaylistId,
+                cancellationToken);
+
+            // 5. Tạo notification trong DB
+            var sender = await _userRepository.GetByIdAsync(command.SenderId, cancellationToken);
+            var senderName = sender?.UserName ?? "Ai đó";
+            var target = command.MediaItemId.HasValue ? "một bài hát" : "một playlist";
+
+            var notification = new Notification
+            {
+                Id        = Guid.NewGuid(),
+                UserId    = command.ReceiverUserId,
+                Type      = NotificationType.Shared,
+                Message   = $"{senderName} đã chia sẻ {target} với bạn",
+                IsRead    = false,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _notificationRepository.CreateAsync(notification, cancellationToken);
+
+            // 6. Push real-time qua SignalR
+            await _pushService.PushAsync(
+                command.ReceiverUserId.ToString(),
+                new
+                {
+                    id        = notification.Id,
+                    type      = (int)notification.Type,
+                    message   = notification.Message,
+                    isRead    = false,
+                    createdAt = notification.CreatedAt
+                },
                 cancellationToken);
 
             return shareId;

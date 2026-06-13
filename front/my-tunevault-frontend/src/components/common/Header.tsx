@@ -4,9 +4,20 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useMusic } from '../../hooks/MusicContext';
 import type { PlayHistoryItem, NotificationItem } from '../../types';
 import apiService from '../../services/ApiService';
+import { useSignalRNotifications } from '../../hooks/useSignalRNotifications';
 import bellImg from '../../assets/icons/notifications.png';
 import arrowLeftImg from '../../assets/icons/arrow_left.png';
 import chevronRightImg from '../../assets/icons/chevron_right.png';
+import UploadModal from '../UploadModal';
+
+// Backend trả DateTime.UtcNow nhưng không có 'Z' suffix
+// → thêm 'Z' để JS parse đúng UTC → convert sang local time
+function parseUtc(dateStr: string): Date {
+  if (!dateStr.endsWith('Z') && !dateStr.match(/[+\-]\d{2}:\d{2}$/)) {
+    return new Date(dateStr + 'Z');
+  }
+  return new Date(dateStr);
+}
 
 function groupByDate(items: PlayHistoryItem[]): { label: string; items: PlayHistoryItem[] }[] {
   const today = new Date();
@@ -17,7 +28,7 @@ function groupByDate(items: PlayHistoryItem[]): { label: string; items: PlayHist
   const groups: Record<string, PlayHistoryItem[]> = {};
 
   for (const item of items) {
-    const d = new Date(item.playedAt);
+    const d = parseUtc(item.playedAt);
     d.setHours(0, 0, 0, 0);
     let label: string;
     if (d.getTime() === today.getTime()) label = 'Today';
@@ -39,7 +50,7 @@ function notifTypeLabel(type: number) {
 }
 
 export default function Header() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const { setQueue } = useMusic();
   const navigate = useNavigate();
 
@@ -51,11 +62,18 @@ export default function Header() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Notification bell
+  const [showUpload, setShowUpload] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+
+  // Real-time notifications via SignalR
+  useSignalRNotifications(isAuthenticated, (newNotif) => {
+    setNotifications(prev => [newNotif, ...prev]);
+    setUnreadCount(prev => prev + 1);
+  });
 
   // Fetch unread count on mount
   useEffect(() => {
@@ -156,8 +174,10 @@ export default function Header() {
 
   const initial = user?.username?.[0]?.toUpperCase() ?? '?';
   const groups = groupByDate(history);
+  const hasAvatar = !!user?.avatarUrl;
 
   return (
+    <>
     <header style={{
       display: 'flex',
       alignItems: 'center',
@@ -171,8 +191,39 @@ export default function Header() {
         </p>
       </div>
 
-      {/* Right section: bell + profile */}
+      {/* Right section: upload + bell + profile */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+
+        {/* Upload button */}
+        <button
+          onClick={() => setShowUpload(true)}
+          title="Upload track"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            padding: '7px 14px',
+            borderRadius: '20px',
+            border: '1px solid #535353',
+            backgroundColor: 'transparent',
+            color: '#fff',
+            fontSize: '0.8rem', fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'border-color 0.15s, background-color 0.15s',
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#fff';
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#535353';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+          </svg>
+          Upload
+        </button>
 
         {/* Notification Bell */}
         <div style={{ position: 'relative' }} ref={notifRef}>
@@ -299,7 +350,7 @@ export default function Header() {
                           margin: '3px 0 0', fontSize: '0.68rem',
                           color: '#6b6b6b',
                         }}>
-                          {notifTypeLabel(notif.type)} · {new Date(notif.createdAt).toLocaleString('en-US', {
+                          {notifTypeLabel(notif.type)} · {parseUtc(notif.createdAt).toLocaleString('en-US', {
                             month: 'short', day: 'numeric',
                             hour: '2-digit', minute: '2-digit',
                           })}
@@ -321,24 +372,34 @@ export default function Header() {
             style={{
               width: '36px', height: '36px',
               borderRadius: '50%',
-              backgroundColor: '#1db954',
+              backgroundColor: hasAvatar ? 'transparent' : '#1db954',
               border: 'none',
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '0.9rem', fontWeight: 700, color: '#000',
               transition: 'transform 0.15s, background-color 0.15s',
               flexShrink: 0,
+              overflow: 'hidden',
+              padding: 0,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'scale(1.08)';
-              e.currentTarget.style.backgroundColor = '#1ed760';
+              if (!hasAvatar) e.currentTarget.style.backgroundColor = '#1ed760';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.backgroundColor = '#1db954';
+              if (!hasAvatar) e.currentTarget.style.backgroundColor = '#1db954';
             }}
           >
-            {initial}
+            {hasAvatar ? (
+              <img
+                src={user!.avatarUrl!}
+                alt={user?.username}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              initial
+            )}
           </button>
 
           {/* Dropdown */}
@@ -469,7 +530,7 @@ export default function Header() {
                                 </p>
                               </div>
                               <span style={{ fontSize: '0.68rem', color: '#6b6b6b', flexShrink: 0 }}>
-                                {new Date(item.playedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                {parseUtc(item.playedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
                           ))}
@@ -485,6 +546,14 @@ export default function Header() {
 
       </div>
     </header>
+
+    {showUpload && (
+      <UploadModal
+        onClose={() => setShowUpload(false)}
+        onUploaded={() => setShowUpload(false)}
+      />
+    )}
+    </>
   );
 }
 
