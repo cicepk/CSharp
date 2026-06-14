@@ -1,48 +1,33 @@
 namespace TuneVault.Application.DTOs.Common;
 
 /// <summary>
-/// Response chuẩn cho tất cả API endpoints
+/// Response chuẩn cho tất cả API endpoints.
 /// Success: { "success": true, "data": {...}, "errors": null, "message": "..." }
-/// Error: { "success": false, "data": null, "errors": [...], "message": "..." }
+/// Error:   { "success": false, "data": null, "errors": [...], "message": "..." }
 /// </summary>
 public class ApiResponse<T>
 {
-    // true = request thành công, false = có lỗi
     public bool Success { get; set; }
-
-    // Dữ liệu trả về (nếu thành công), null nếu lỗi
     public T? Data { get; set; }
-
-    // Danh sách lỗi (nếu thất bại), null nếu thành công
     public string[]? Errors { get; set; }
-
-    // Thông báo tổng quát về kết quả
     public string? Message { get; set; }
-    // Factory method: Tạo response thành công
-    public static ApiResponse<T> SuccessResponse(T data, string message = "Success")
-    {
-        return new ApiResponse<T>
-        {
-            Success = true,
-            Data = data,
-            Errors = null,
-            Message = message
-        };
-    }
-    // Factory method: Tạo response lỗi (multiple errors)
-    public static ApiResponse<T> ErrorResponse(string[] errors, string message = "An error occurred")
-    {
-        return new ApiResponse<T>
-        {
-            Success = false,
-            Data = default,
-            Errors = errors,
-            Message = message
-        };
-    }
-    // Factory method: Tạo response lỗi (single error)
-    public static ApiResponse<T> ErrorResponse(string error, string message = "An error occurred")
-    {
-        return ErrorResponse(new[] { error }, message);
-    }
+
+    // --- Thành công ---
+    public static ApiResponse<T> SuccessResponse(T data, string message = "Thành công!")
+        => new() { Success = true, Data = data, Errors = null, Message = message };
+
+    // Alias cho ShareController (tương thích ngược)
+    public static ApiResponse<T> SetSuccess(T data, string message = "Thành công!")
+        => SuccessResponse(data, message);
+
+    // --- Thất bại ---
+    public static ApiResponse<T> ErrorResponse(string[] errors, string message = "Đã xảy ra lỗi.")
+        => new() { Success = false, Data = default, Errors = errors, Message = message };
+
+    public static ApiResponse<T> ErrorResponse(string error, string message = "Đã xảy ra lỗi.")
+        => ErrorResponse(new[] { error }, message);
+
+    // Alias dùng List<string> (tương thích ngược)
+    public static ApiResponse<T> SetFailure(List<string> errors, string message = "Đã xảy ra lỗi.")
+        => ErrorResponse(errors.ToArray(), message);
 }

@@ -1,35 +1,26 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using TuneVault.API.Hubs;
+using TuneVault.API.Middlewares;
+using TuneVault.API.Services;
+using TuneVault.Application;
 using TuneVault.Application.Interfaces;
-using TuneVault.Infrastructure.Data;
-using TuneVault.Infrastructure.Repositories;
-using TuneVault.Infrastructure.Seeders;
-using TuneVault.Infrastructure.Services;
+using TuneVault.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured");
+// --- Application Layer (MediatR + FluentValidation + Pipeline) ---
+builder.Services.AddApplication();
 
-// --- Infrastructure ---
-builder.Services.AddSingleton<ISqlConnectionFactory>(new SqlConnectionFactory(connectionString));
+// --- Infrastructure Layer (Repositories + Services + DB) ---
+builder.Services.AddInfrastructure(builder.Configuration);
 
-// Repositories
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IMediaItemRepository, MediaItemRepository>();
-builder.Services.AddScoped<IPlaylistRepository, PlaylistRepository>();
-builder.Services.AddScoped<IFavouriteRepository, FavouriteRepository>();
-builder.Services.AddScoped<IFollowRepository, FollowRepository>();
-builder.Services.AddScoped<IMediaShareRepository, MediaShareRepository>();
-builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
-builder.Services.AddScoped<IPlayHistoryRepository, PlayHistoryRepository>();
+// --- SignalR ---
+builder.Services.AddSignalR();
+builder.Services.AddScoped<INotificationPushService, SignalRNotificationService>();
 
-// Services
-builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.AddScoped<IDataSeeder, DataSeeder>();
-
-// --- JWT Authentication ---
+// --- JWT Authentication (+ query string cho SignalR WebSocket) ---
 var jwtKey = builder.Configuration["Jwt:SecretKey"]
     ?? throw new InvalidOperationException("Jwt:SecretKey is not configured");
 
@@ -47,11 +38,27 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ClockSkew = TimeSpan.Zero
         };
+
+        // SignalR WebSocket không gửi header → đọc token từ query string
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/notification-hub"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
 
-// --- CORS ---
+// --- CORS (AllowCredentials bắt buộc cho SignalR) ---
 var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"] ?? "http://localhost:5173";
 builder.Services.AddCors(options =>
 {
@@ -86,17 +93,18 @@ using (var scope = app.Services.CreateScope())
 }
 
 if (app.Environment.IsDevelopment())
-{
     app.MapOpenApi();
-}
 
 if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 
+// --- Middleware Pipeline ---
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseStaticFiles();
 app.UseCors("ReactApp");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<NotificationHub>("/notification-hub");
 
 app.Run();

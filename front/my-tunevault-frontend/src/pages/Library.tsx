@@ -1,192 +1,274 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../services/ApiService';
 import type { Playlist } from '../types';
-import { useMusic } from '../hooks/MusicContext';
-import { useAuth } from '../contexts/AuthContext';
+
+async function handleToggleVisibility(
+  playlist: Playlist,
+  setPlaylists: React.Dispatch<React.SetStateAction<Playlist[]>>,
+  e: React.MouseEvent
+) {
+  e.stopPropagation();
+  const newVal = !playlist.isPublic;
+  try {
+    await apiService.togglePlaylistVisibility(playlist.id, newVal);
+    setPlaylists(prev => prev.map(p => p.id === playlist.id ? { ...p, isPublic: newVal } : p));
+  } catch { /* silent */ }
+}
+
+const FALLBACK_COVER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="180" height="180"%3E%3Crect fill="%23282828" width="180" height="180"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23b3b3b3" font-size="30"%3E%F0%9F%8E%B5%3C/text%3E%3C/svg%3E';
 
 export default function Library() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  // favourites list no longer stored locally in this page
-  const [newCollectionName, setNewCollectionName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const navigate = useNavigate();
-  const { collections, createCollection } = useMusic();
-  const { isAuthenticated } = useAuth();
+
+  // Create playlist form state
+  const [showForm, setShowForm] = useState(false);
+  const [formName, setFormName] = useState('');
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const fetchPlaylists = async () => {
-      try {
-        setIsLoading(true);
-        const items = await apiService.getPlaylists();
-        setPlaylists(items);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load playlists');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    apiService.getPlaylists()
+      .then(setPlaylists)
+      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load playlists'))
+      .finally(() => setIsLoading(false));
+  }, []);
 
-    const fetchAll = async () => {
-      await fetchPlaylists();
-
-      try {
-        if (isAuthenticated) {
-          const favIds = await apiService.getFavourites();
-          if (favIds.length > 0) {
-            const allSongs = await apiService.getSongs();
-            const favSongs = allSongs.filter((s) => favIds.includes(s.id));
-
-            // ensure context has a default collection
-            if (!collections.some(c => c.id === 'col-favorite' || c.name.toLowerCase() === 'my favorites' || c.name.toLowerCase() === 'favorite')) {
-              createCollection('My Favorites', favSongs.map((s) => s.id));
-            }
-          } else {
-            // no favourites
-          }
-        } else {
-          // not authenticated: load favourites and collections from localStorage
-          const rawFav = localStorage.getItem('favorites');
-          const favIds: string[] = rawFav ? JSON.parse(rawFav) : [];
-          if (favIds.length > 0) {
-            const allSongs = await apiService.getSongs();
-            const favSongs = allSongs.filter((s) => favIds.includes(s.id));
-            // ensure default collection exists for unauth users
-            if (!collections.some(c => c.id === 'col-favorite' || c.name.toLowerCase() === 'my favorites' || c.name.toLowerCase() === 'favorite')) {
-              createCollection('My Favorites', favSongs.map((s) => s.id));
-            }
-          }
-          // for unauthenticated users, collections are stored in localStorage; try to load into context
-          try {
-            const rawCols = localStorage.getItem('fav_collections');
-            if (rawCols) {
-              const parsed = JSON.parse(rawCols) as Array<{ id: string; name: string; songIds: string[] }>;
-              // create any collections that don't exist in context yet
-              parsed.forEach(col => {
-                if (!collections.some(c => c.id === col.id || c.name === col.name)) {
-                  createCollection(col.name, col.songIds);
-                }
-              });
-            }
-          } catch {
-            // ignore
-          }
-        }
-      } catch {
-        // ignore
-      }
-    };
-
-    fetchAll();
-  }, [isAuthenticated]);
-
-  // persist context collections into localStorage for unauthenticated use
   useEffect(() => {
-    try {
-      localStorage.setItem('fav_collections', JSON.stringify(collections));
-    } catch {
-      // ignore
+    if (showForm) {
+      setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [collections]);
+  }, [showForm]);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = formName.trim();
+    if (!name) { setFormError('Name is required'); return; }
+    setFormLoading(true);
+    setFormError('');
+    try {
+      const newPl = await apiService.createPlaylist(name);
+      setPlaylists(prev => [newPl, ...prev]);
+      setShowForm(false);
+      setFormName('');
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Failed to create playlist');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleCancelForm = () => {
+    setShowForm(false);
+    setFormName('');
+    setFormError('');
+  };
 
   if (isLoading) {
     return (
-      <div className="flex flex-col">
-        <h2 className="text-2xl font-bold mb-6 text-white">Your Library</h2>
-        <p className="text-gray-400">Loading playlists...</p>
+      <div style={{ padding: '2rem' }}>
+        <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#fff' }}>
+          Your Library
+        </h2>
+        <p style={{ color: '#b3b3b3' }}>Loading playlists...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col">
-        <h2 className="text-2xl font-bold mb-6 text-white">Your Library</h2>
-        <p className="text-red-600">Error: {error}</p>
+      <div style={{ padding: '2rem' }}>
+        <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#fff' }}>
+          Your Library
+        </h2>
+        <p style={{ color: '#dc2626' }}>Error: {error}</p>
       </div>
     );
   }
 
-  // helpers
-  const openCollection = (id: string) => navigate(`/collection/${id}`);
-
   return (
-    <div className="flex flex-col w-full h-full">
-      <h2 className="text-xl md:text-2xl lg:text-3xl font-bold mb-4 md:mb-6 text-white px-2 md:px-0">Your Library</h2>
-
-      {/* Collections */}
-      <div className="mb-6 md:mb-8 px-2 md:px-0">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 md:gap-4 mb-4">
-          <h3 className="text-base md:text-lg font-bold text-white">Favorite Collections</h3>
-          <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-            <input 
-              value={newCollectionName} 
-              onChange={(e) => setNewCollectionName(e.target.value)} 
-              placeholder="New collection name (e.g. Chill & Relax)" 
-              className="flex-1 md:flex-none p-2 rounded-md border border-gray-700 bg-gray-900 text-white text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500" 
-            />
-            <button 
-              onClick={() => {
-                const name = newCollectionName.trim();
-                if (!name) return;
-                createCollection(name);
-                setNewCollectionName('');
-              }} 
-              className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-md text-sm font-medium text-black transition-colors whitespace-nowrap"
-            >
-              Create
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-4">
-          {collections.length === 0 && (
-            <div className="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5 xl:col-span-6 bg-[#282828] p-4 rounded-md text-gray-400 text-sm md:text-base">No collections yet</div>
-          )}
-
-          {collections.map((col) => (
-            <div 
-              key={col.id} 
-              onClick={() => openCollection(col.id)} 
-              className="collection-card rounded-md p-3 cursor-pointer flex flex-col justify-between transition-colors hover:bg-[#333333] h-full bg-[#282828] group"
-            >
-              <div className="flex-1">
-                <div className="font-bold text-white truncate text-sm md:text-base group-hover:text-green-400 transition-colors">{col.name}</div>
-                <div className="text-gray-400 text-xs md:text-sm">{col.songIds.length} tracks</div>
-              </div>
-              <div className="text-gray-400 text-xs md:text-sm mt-2 group-hover:text-green-400 transition-colors">Open</div>
-            </div>
-          ))}
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', padding: '2rem' }}>
+      {/* Title row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showForm ? '1rem' : '1.5rem' }}>
+        <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', margin: 0, color: '#fff' }}>
+          Your Library
+        </h2>
+        <button
+          onClick={() => { setShowForm(v => !v); setFormError(''); }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            padding: '8px 16px',
+            backgroundColor: '#1db954',
+            border: 'none', borderRadius: '20px',
+            color: '#000', fontSize: '0.875rem', fontWeight: 700,
+            cursor: 'pointer', transition: 'background-color 0.15s, transform 0.1s',
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#1ed760';
+            e.currentTarget.style.transform = 'scale(1.03)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#1db954';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+          </svg>
+          New Playlist
+        </button>
       </div>
 
-      {/* Playlists */}
-      <div className="mb-6 md:mb-8 px-2 md:px-0">
-        <h3 className="text-base md:text-lg font-bold text-white mb-4">Playlists</h3>
+      {/* Create form */}
+      {showForm && (
+        <form
+          onSubmit={handleCreate}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '14px 16px',
+            backgroundColor: '#282828',
+            borderRadius: '8px',
+            marginBottom: '1.5rem',
+          }}
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Playlist name..."
+            value={formName}
+            onChange={(e) => { setFormName(e.target.value); setFormError(''); }}
+            maxLength={80}
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              backgroundColor: '#3e3e3e',
+              border: formError ? '1px solid #e53e3e' : '1px solid transparent',
+              borderRadius: '4px',
+              color: '#fff', fontSize: '0.875rem',
+              outline: 'none',
+            }}
+            onFocus={(e) => e.currentTarget.style.border = '1px solid #1db954'}
+            onBlur={(e) => { e.currentTarget.style.border = formError ? '1px solid #e53e3e' : '1px solid transparent'; }}
+          />
+          {formError && (
+            <span style={{ fontSize: '0.75rem', color: '#e53e3e', flexShrink: 0 }}>{formError}</span>
+          )}
+          <button
+            type="submit"
+            disabled={formLoading}
+            style={{
+              padding: '8px 18px',
+              backgroundColor: '#1db954',
+              border: 'none', borderRadius: '4px',
+              color: '#000', fontSize: '0.875rem', fontWeight: 700,
+              cursor: formLoading ? 'not-allowed' : 'pointer',
+              opacity: formLoading ? 0.7 : 1,
+              flexShrink: 0,
+            }}
+          >
+            {formLoading ? 'Creating...' : 'Create'}
+          </button>
+          <button
+            type="button"
+            onClick={handleCancelForm}
+            style={{
+              padding: '8px 14px',
+              backgroundColor: 'transparent',
+              border: '1px solid #535353', borderRadius: '4px',
+              color: '#b3b3b3', fontSize: '0.875rem',
+              cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            Cancel
+          </button>
+        </form>
+      )}
+
+      {/* Playlists grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+        gap: '1rem',
+      }}>
         {playlists.length === 0 ? (
-          <div className="bg-[#282828] p-4 rounded-md text-gray-400 text-sm md:text-base">No playlists yet</div>
+          <div style={{
+            gridColumn: '1 / -1',
+            padding: '2rem',
+            backgroundColor: '#282828',
+            borderRadius: '8px',
+            textAlign: 'center',
+          }}>
+            <p style={{ color: '#b3b3b3', margin: 0 }}>No playlists yet — create one above!</p>
+          </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-4">
-            {playlists.map((playlist) => (
-              <div 
-                key={playlist.id} 
-                onClick={() => navigate(`/playlist/${playlist.id}`)} 
-                className="bg-[#282828] rounded-md cursor-pointer transition-all overflow-hidden hover:bg-[#333333] hover:shadow-lg flex flex-col h-full group"
-              >
-                {playlist.cover ? (
-                  <img src={playlist.cover} alt={playlist.title} className="w-full h-24 sm:h-32 md:h-40 object-cover block group-hover:opacity-75 transition-opacity" />
-                ) : (
-                  <div className="w-full h-24 sm:h-32 md:h-40 bg-[#1e1e1e] flex items-center justify-center text-gray-500 text-2xl sm:text-3xl md:text-4xl group-hover:bg-[#2a2a2a] transition-colors"></div>
-                )}
-                <div className="collection-card rounded-md p-3 cursor-pointer flex flex-col justify-between transition-colors hover:bg-[#333333] h-full bg-[#282828] group">
-                  <p className="font-bold text-xs md:text-sm mb-1 md:mb-2 text-white truncate group-hover:text-green-400 transition-colors">{playlist.title}</p>
-                  <p className="text-xs text-gray-400">{playlist.trackCount || 0} tracks</p>
+          playlists.map((playlist) => (
+            <div
+              key={playlist.id}
+              onClick={() => navigate(`/playlist/${playlist.id}`)}
+              style={{
+                backgroundColor: '#282828',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                overflow: 'hidden',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#1db954';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#282828';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              <img
+                src={playlist.cover || FALLBACK_COVER}
+                alt={playlist.title}
+                style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }}
+                onError={(e) => { e.currentTarget.src = FALLBACK_COVER; }}
+              />
+              <div style={{ padding: '0.75rem 1rem 1rem' }}>
+                <p style={{
+                  fontWeight: 'bold', fontSize: '0.875rem',
+                  margin: '0 0 4px',
+                  color: '#fff',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {playlist.title}
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                  <p style={{ fontSize: '0.75rem', margin: 0, color: '#b3b3b3' }}>
+                    {playlist.trackCount ?? playlist.tracks?.length ?? 0} tracks
+                  </p>
+                  <button
+                    onClick={(e) => handleToggleVisibility(playlist, setPlaylists, e)}
+                    title={playlist.isPublic ? 'Make private' : 'Make public'}
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      backgroundColor: playlist.isPublic ? 'rgba(29,185,84,0.2)' : 'rgba(255,255,255,0.1)',
+                      color: playlist.isPublic ? '#1db954' : '#b3b3b3',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                  >
+                    {playlist.isPublic ? 'Public' : 'Private'}
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))
         )}
       </div>
     </div>

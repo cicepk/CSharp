@@ -73,15 +73,17 @@ public class MediaItemsController : ControllerBase
     [HttpPost("upload")]
     [Authorize]
     [RequestSizeLimit(500 * 1024 * 1024)]
-    public async Task<IActionResult> Upload([FromForm] UploadMediaRequest request, IFormFile file, CancellationToken ct)
+    public async Task<IActionResult> Upload(
+        [FromForm] UploadMediaRequest request,
+        IFormFile file,
+        IFormFile? cover,
+        CancellationToken ct)
     {
-        // Validate metadata
         var errors = new List<string>();
         if (string.IsNullOrWhiteSpace(request.Title)) errors.Add("Title is required");
         if (string.IsNullOrWhiteSpace(request.Artist)) errors.Add("Artist is required");
         if (request.MediaType != 1 && request.MediaType != 2) errors.Add("MediaType must be 1 (Audio) or 2 (Video)");
 
-        // Validate file
         if (file == null || file.Length == 0)
             errors.Add("File is required");
         else
@@ -101,30 +103,52 @@ public class MediaItemsController : ControllerBase
                 errors.Add("File extension does not match Video type");
         }
 
+        string[] allowedCoverExts = [".jpg", ".jpeg", ".png", ".webp"];
+        if (cover != null && cover.Length > 0)
+        {
+            var coverExt = Path.GetExtension(cover.FileName).ToLowerInvariant();
+            if (!allowedCoverExts.Contains(coverExt))
+                errors.Add("Cover must be JPG, PNG or WebP");
+            if (cover.Length > 5L * 1024 * 1024)
+                errors.Add("Cover image must be under 5MB");
+        }
+
         if (errors.Count > 0)
             return BadRequest(ApiResponse<object>.ErrorResponse(errors.ToArray(), "Validation failed"));
 
-        // Save file
+        var wwwroot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+
+        // Save media file
         var subFolder = request.MediaType == 1 ? "audio" : "video";
-        var uploadsPath = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads", subFolder);
-        Directory.CreateDirectory(uploadsPath);
+        var mediaDir = Path.Combine(wwwroot, "uploads", subFolder);
+        Directory.CreateDirectory(mediaDir);
 
-        var ext2 = Path.GetExtension(file!.FileName).ToLowerInvariant();
-        var fileName = $"{Guid.NewGuid()}{ext2}";
-        var filePath = Path.Combine(uploadsPath, fileName);
-
-        using (var stream = new FileStream(filePath, FileMode.Create))
+        var mediaExt = Path.GetExtension(file!.FileName).ToLowerInvariant();
+        var mediaFileName = $"{Guid.NewGuid()}{mediaExt}";
+        using (var stream = new FileStream(Path.Combine(mediaDir, mediaFileName), FileMode.Create))
             await file.CopyToAsync(stream, ct);
 
-        var relativeFilePath = $"/uploads/{subFolder}/{fileName}";
+        // Save cover image (optional)
+        string? relativeCoverPath = null;
+        if (cover != null && cover.Length > 0)
+        {
+            var coverDir = Path.Combine(wwwroot, "uploads", "covers");
+            Directory.CreateDirectory(coverDir);
+            var coverExt = Path.GetExtension(cover.FileName).ToLowerInvariant();
+            var coverFileName = $"{Guid.NewGuid()}{coverExt}";
+            using (var stream = new FileStream(Path.Combine(coverDir, coverFileName), FileMode.Create))
+                await cover.CopyToAsync(stream, ct);
+            relativeCoverPath = $"/uploads/covers/{coverFileName}";
+        }
 
         var ownerId = GetCurrentUserId();
         var mediaItem = new MediaItem
         {
             Id = Guid.NewGuid(),
-            Title = request.Title,
-            Artist = request.Artist,
-            FilePath = relativeFilePath,
+            Title = request.Title.Trim(),
+            Artist = request.Artist.Trim(),
+            FilePath = $"/uploads/{subFolder}/{mediaFileName}",
+            CoverPath = relativeCoverPath,
             MediaType = (MediaType)request.MediaType,
             DurationSeconds = 0,
             OwnerId = ownerId,
@@ -132,7 +156,8 @@ public class MediaItemsController : ControllerBase
         };
 
         await _mediaRepo.AddAsync(mediaItem, ct);
-        return CreatedAtAction(nameof(GetById), new { id = mediaItem.Id }, ApiResponse<MediaDto>.SuccessResponse(ToDto(mediaItem), "Upload successful"));
+        return CreatedAtAction(nameof(GetById), new { id = mediaItem.Id },
+            ApiResponse<MediaDto>.SuccessResponse(ToDto(mediaItem), "Upload successful"));
     }
 
     // GET /api/mediaitems/{id}/stream — Stream audio/video với Range header support

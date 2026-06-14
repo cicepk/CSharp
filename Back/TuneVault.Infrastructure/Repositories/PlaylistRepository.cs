@@ -142,7 +142,7 @@ public class PlaylistRepository : IPlaylistRepository
     public async Task<IReadOnlyList<MediaItem>> GetPlaylistTracksAsync(Guid playlistId, CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            SELECT m.Id, m.Title, m.Artist, m.FilePath, m.MediaType, m.DurationSeconds, m.CreatedAt, m.OwnerId
+            SELECT m.Id, m.Title, m.Artist, m.FilePath, m.CoverPath, m.MediaType, m.DurationSeconds, m.CreatedAt, m.OwnerId
             FROM MediaItems m
             INNER JOIN PlaylistItems pi ON m.Id = pi.MediaItemId
             WHERE pi.PlaylistId = @PlaylistId
@@ -170,6 +170,22 @@ public class PlaylistRepository : IPlaylistRepository
             var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
             var count = await connection.QuerySingleAsync<int>(command);
             return count;
+        }
+    }
+
+    public async Task<IReadOnlyList<Playlist>> GetPublicByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        const string sql = @"
+            SELECT Id, Name, isPublic, CreatedAt, OwnerId
+            FROM Playlists
+            WHERE OwnerId = @UserId AND isPublic = 1
+            ORDER BY CreatedAt DESC";
+
+        using (var connection = _connectionFactory.CreateConnection())
+        {
+            var command = new CommandDefinition(sql, new { UserId = userId }, cancellationToken: cancellationToken);
+            var playlists = await connection.QueryAsync<Playlist>(command);
+            return playlists.ToList();
         }
     }
 }

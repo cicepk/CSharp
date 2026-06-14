@@ -21,6 +21,9 @@ public class UserDetailDto
     // Số lượng user này đang follow
     public int FollowingCount { get; set; }
 
+    public string? Bio { get; set; }
+    public string? AvatarUrl { get; set; }
+
     // Ngày tạo tài khoản (UTC)
     public DateTime CreatedAt { get; set; }
 }

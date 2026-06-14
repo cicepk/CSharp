@@ -17,7 +17,7 @@ public class UserRepository : IUserRepository
     public async Task<UserProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            SELECT Id, UserName, Email, CreatedAt
+            SELECT Id, UserName, Email, Bio, AvatarPath, CreatedAt
             FROM UserProfiles
             WHERE Id = @Id";
 
@@ -33,7 +33,7 @@ public class UserRepository : IUserRepository
     public async Task<UserProfile?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            SELECT Id, UserName, Email, CreatedAt
+            SELECT Id, UserName, Email, Bio, AvatarPath, CreatedAt
             FROM UserProfiles
             WHERE Email = @Email";
 
@@ -49,7 +49,7 @@ public class UserRepository : IUserRepository
     public async Task<UserProfile?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            SELECT Id, UserName, Email, CreatedAt
+            SELECT Id, UserName, Email, Bio, AvatarPath, CreatedAt
             FROM UserProfiles
             WHERE UserName = @UserName";
 
@@ -89,7 +89,9 @@ public class UserRepository : IUserRepository
         const string sql = @"
             UPDATE UserProfiles
             SET UserName = @UserName,
-                Email = @Email
+                Email = @Email,
+                Bio = @Bio,
+                AvatarPath = @AvatarPath
             WHERE Id = @Id";
 
         using (var connection = _connectionFactory.CreateConnection())
@@ -98,7 +100,9 @@ public class UserRepository : IUserRepository
             {
                 user.Id,
                 user.UserName,
-                user.Email
+                user.Email,
+                user.Bio,
+                user.AvatarPath
             };
             var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
             var affectedRows = await connection.ExecuteAsync(command);
@@ -132,6 +136,36 @@ public class UserRepository : IUserRepository
             var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
             var result = await connection.QuerySingleOrDefaultAsync<string>(command);
             return result;
+        }
+    }
+
+    public async Task<bool> ExistsAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        const string sql = "SELECT COUNT(*) FROM UserProfiles WHERE Id = @Id";
+
+        using (var connection = _connectionFactory.CreateConnection())
+        {
+            var command = new CommandDefinition(sql, new { Id = userId }, cancellationToken: cancellationToken);
+            var count = await connection.QuerySingleAsync<int>(command);
+            return count > 0;
+        }
+    }
+
+    public async Task<IReadOnlyList<UserProfile>> SearchAsync(string query, int limit = 10, CancellationToken cancellationToken = default)
+    {
+        const string sql = @"
+            SELECT TOP (@Limit) Id, UserName, Email, Bio, AvatarPath, CreatedAt
+            FROM UserProfiles
+            WHERE UserName LIKE @Query
+            ORDER BY UserName";
+
+        using (var connection = _connectionFactory.CreateConnection())
+        {
+            var command = new CommandDefinition(sql,
+                new { Query = $"%{query}%", Limit = limit },
+                cancellationToken: cancellationToken);
+            var results = await connection.QueryAsync<UserProfile>(command);
+            return results.ToList().AsReadOnly();
         }
     }
 }

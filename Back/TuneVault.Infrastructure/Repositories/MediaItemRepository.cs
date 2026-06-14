@@ -30,7 +30,7 @@ public class MediaItemRepository : IMediaItemRepository
     public async Task<MediaItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            SELECT Id, Title, Artist, FilePath, MediaType, DurationSeconds, CreatedAt, OwnerId
+            SELECT Id, Title, Artist, FilePath, CoverPath, MediaType, DurationSeconds, CreatedAt, OwnerId
             FROM MediaItems
             WHERE Id = @Id";
 

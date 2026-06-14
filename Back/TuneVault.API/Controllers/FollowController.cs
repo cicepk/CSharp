@@ -17,12 +17,18 @@ public class FollowController : ControllerBase
     private readonly IFollowRepository _followRepo;
     private readonly IUserRepository _userRepo;
     private readonly INotificationRepository _notificationRepo;
+    private readonly INotificationPushService _pushService;
 
-    public FollowController(IFollowRepository followRepo, IUserRepository userRepo, INotificationRepository notificationRepo)
+    public FollowController(
+        IFollowRepository followRepo,
+        IUserRepository userRepo,
+        INotificationRepository notificationRepo,
+        INotificationPushService pushService)
     {
         _followRepo = followRepo;
         _userRepo = userRepo;
         _notificationRepo = notificationRepo;
+        _pushService = pushService;
     }
 
     private Guid GetCurrentUserId()
@@ -64,6 +70,18 @@ public class FollowController : ControllerBase
             CreatedAt = DateTime.UtcNow
         };
         await _notificationRepo.CreateAsync(notification, ct);
+
+        // Push real-time qua SignalR
+        await _pushService.PushAsync(
+            request.UserId.ToString(),
+            new
+            {
+                id        = notification.Id,
+                type      = (int)notification.Type,
+                message   = notification.Message,
+                isRead    = false,
+                createdAt = notification.CreatedAt
+            }, ct);
 
         return Ok(ApiResponse<object>.SuccessResponse(null!, "Followed successfully"));
     }
