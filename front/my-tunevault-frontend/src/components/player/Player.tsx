@@ -10,6 +10,7 @@ import shuffleImg from '../../assets/icons/shuffle.png';
 import repeatImg from '../../assets/icons/repeat.png';
 import addImg from '../../assets/icons/add.png';
 import volumeImg from '../../assets/icons/volume_up.png';
+import styles from './Player.module.css';
 
 function formatTime(seconds: number): string {
   if (!seconds || isNaN(seconds)) return '0:00';
@@ -83,74 +84,40 @@ export default function Player() {
   const hasPrev = queue.length > 0 && queueIndex > 0;
 
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: '280px 1fr 280px',
-      alignItems: 'center',
-      height: '100%',
-      padding: '0 1rem',
-      backgroundColor: '#181818',
-      borderTop: '1px solid #282828',
-    }}>
+    <div className={styles.playerContainer}>
 
       {/* LEFT — Track info + add button */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
+      <div className={styles.left}>
         <img
           src={currentSong?.cover || FALLBACK_COVER}
           alt={currentSong?.title || ''}
           onError={(e) => { e.currentTarget.src = FALLBACK_COVER; }}
-          style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
+          className={styles.trackImage}
         />
-        <div style={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
-          <p style={{
-            margin: 0, fontSize: '0.875rem', fontWeight: 600,
-            color: currentSong ? '#fff' : '#6b6b6b',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
+        <div className={styles.trackInfo}>
+          <p
+            className={styles.title}
+            style={{ color: currentSong ? '#fff' : '#6b6b6b' }}
+          >
             {currentSong?.title || 'No track selected'}
           </p>
-          <p style={{
-            margin: '2px 0 0 0', fontSize: '0.75rem', color: '#b3b3b3',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
-            {currentSong?.artist || ''}
-          </p>
+          <p className={styles.artist}>{currentSong?.artist || ''}</p>
         </div>
 
         {/* + Add to playlist button */}
         {currentSong && (
-          <div style={{ position: 'relative', flexShrink: 0 }} ref={addMenuRef}>
+          <div className={styles.addButtonWrapper} ref={addMenuRef}>
             <button
               onClick={handleOpenAddMenu}
               title="Add to playlist"
-              style={{
-                background: 'none', border: '1px solid #535353',
-                borderRadius: '50%', width: '24px', height: '24px',
-                cursor: 'pointer', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', padding: 0,
-                transition: 'border-color 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.borderColor = '#fff'}
-              onMouseLeave={(e) => e.currentTarget.style.borderColor = '#535353'}
+              className={styles.iconButton}
             >
-              <img src={addImg} alt="Add to playlist" style={{ width: '14px', height: '14px', opacity: 0.7 }} />
+              <img src={addImg} alt="Add to playlist" className={styles.smallIcon} />
             </button>
 
             {showAddMenu && (
-              <div style={{
-                position: 'absolute', bottom: '34px', left: '0',
-                backgroundColor: '#282828', borderRadius: '6px',
-                minWidth: '180px', zIndex: 100,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-                overflow: 'hidden',
-              }}>
-                <p style={{
-                  margin: 0, padding: '10px 14px 6px',
-                  fontSize: '0.7rem', color: '#b3b3b3', textTransform: 'uppercase',
-                  letterSpacing: '0.08em', fontWeight: 700,
-                }}>
-                  Add to playlist
-                </p>
+              <div className={styles.addMenu}>
+                <p className={styles.addMenuHeader}>Add to playlist</p>
                 {addMsg ? (
                   <p style={{ margin: 0, padding: '8px 14px 10px', fontSize: '0.8rem', color: '#1db954' }}>
                     {addMsg}
@@ -164,14 +131,9 @@ export default function Player() {
                     <button
                       key={pl.id}
                       onClick={() => handleAddToPlaylist(pl)}
-                      style={{
-                        display: 'block', width: '100%', textAlign: 'left',
-                        padding: '8px 14px', background: 'none', border: 'none',
-                        color: '#fff', fontSize: '0.875rem', cursor: 'pointer',
-                        transition: 'background 0.15s',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#3e3e3e'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                      className={styles.addMenuItem}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#3e3e3e')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
                     >
                       {pl.title}
                     </button>
@@ -184,21 +146,15 @@ export default function Player() {
       </div>
 
       {/* CENTER — Controls + progress */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+      <div className={styles.center}>
+        <div className={styles.controlsRow}>
 
           {/* Shuffle */}
           <button
             onClick={toggleShuffle}
             title="Shuffle"
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: '4px', display: 'flex', alignItems: 'center',
-              opacity: isShuffle ? 1 : 0.5, transition: 'opacity 0.2s',
-              position: 'relative',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-            onMouseLeave={(e) => e.currentTarget.style.opacity = isShuffle ? '1' : '0.5'}
+            className={styles.iconControl}
+            style={{ opacity: isShuffle ? 1 : 0.5 }}
           >
             <img src={shuffleImg} alt="Shuffle" style={{ width: '16px', height: '16px' }} />
             {isShuffle && (
@@ -216,13 +172,8 @@ export default function Player() {
             onClick={playPrevious}
             disabled={!hasPrev}
             title="Previous"
-            style={{
-              background: 'none', border: 'none', cursor: hasPrev ? 'pointer' : 'default',
-              padding: 0, display: 'flex', alignItems: 'center',
-              opacity: hasPrev ? 0.7 : 0.3, transition: 'opacity 0.2s',
-            }}
-            onMouseEnter={(e) => { if (hasPrev) e.currentTarget.style.opacity = '1'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.opacity = hasPrev ? '0.7' : '0.3'; }}
+            className={styles.prevNext}
+            style={{ opacity: hasPrev ? 0.7 : 0.3, cursor: hasPrev ? 'pointer' : 'default' }}
           >
             <img src={previousImg} alt="Previous" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
           </button>
@@ -231,16 +182,8 @@ export default function Player() {
           <button
             onClick={togglePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
-            style={{
-              backgroundColor: '#fff',
-              border: 'none', borderRadius: '50%', cursor: 'pointer',
-              width: '34px', height: '34px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: 0, transition: 'transform 0.1s',
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.06)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            className={styles.playButton}
+            style={{ transform: undefined }}
           >
             <img
               src={isPlaying ? pauseImg : playButtonImg}
@@ -254,13 +197,8 @@ export default function Player() {
             onClick={playNext}
             disabled={!hasNext}
             title="Next"
-            style={{
-              background: 'none', border: 'none', cursor: hasNext ? 'pointer' : 'default',
-              padding: 0, display: 'flex', alignItems: 'center',
-              opacity: hasNext ? 0.7 : 0.3, transition: 'opacity 0.2s',
-            }}
-            onMouseEnter={(e) => { if (hasNext) e.currentTarget.style.opacity = '1'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.opacity = hasNext ? '0.7' : '0.3'; }}
+            className={styles.prevNext}
+            style={{ opacity: hasNext ? 0.7 : 0.3, cursor: hasNext ? 'pointer' : 'default' }}
           >
             <img src={nextImg} alt="Next" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
           </button>
@@ -269,14 +207,8 @@ export default function Player() {
           <button
             onClick={toggleRepeat}
             title="Repeat"
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: '4px', display: 'flex', alignItems: 'center',
-              opacity: isRepeat ? 1 : 0.5, transition: 'opacity 0.2s',
-              position: 'relative',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-            onMouseLeave={(e) => e.currentTarget.style.opacity = isRepeat ? '1' : '0.5'}
+            className={styles.iconControl}
+            style={{ opacity: isRepeat ? 1 : 0.5 }}
           >
             <img src={repeatImg} alt="Repeat" style={{ width: '16px', height: '16px' }} />
             {isRepeat && (
@@ -289,54 +221,31 @@ export default function Player() {
             )}
           </button>
         </div>
-
         {/* Progress bar + time */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '480px' }}>
-          <span style={{ fontSize: '0.68rem', color: '#b3b3b3', minWidth: '36px', textAlign: 'right' }}>
-            {formatTime(currentTime)}
-          </span>
-          <div
-            onClick={handleProgressClick}
-            style={{
-              flex: 1, height: '4px', backgroundColor: '#535353',
-              borderRadius: '2px', cursor: 'pointer', position: 'relative',
-            }}
-            onMouseEnter={(e) => { (e.currentTarget.querySelector('.progress-fill') as HTMLElement).style.backgroundColor = '#1db954'; }}
-            onMouseLeave={(e) => { (e.currentTarget.querySelector('.progress-fill') as HTMLElement).style.backgroundColor = '#b3b3b3'; }}
-          >
-            <div
-              className="progress-fill"
-              style={{
-                height: '100%', width: `${progressPercent}%`,
-                backgroundColor: '#b3b3b3', borderRadius: '2px',
-                pointerEvents: 'none', transition: 'background-color 0.2s',
-              }}
-            />
+        <div className={styles.progressWrapper}>
+          <span className={styles.time}>{formatTime(currentTime)}</span>
+          <div onClick={handleProgressClick} className={styles.progressBar}>
+            <div className={styles.progressFill} style={{ width: `${progressPercent}%` }} />
           </div>
-          <span style={{ fontSize: '0.68rem', color: '#b3b3b3', minWidth: '36px' }}>
-            {formatTime(duration)}
-          </span>
+          <span className={styles.time}>{formatTime(duration)}</span>
         </div>
       </div>
 
       {/* RIGHT — Volume */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-        <img src={volumeImg} alt="Volume" style={{ width: '16px', height: '16px', opacity: 0.7 }} />
+      <div className={styles.right}>
+        <img src={volumeImg} alt="Volume" className={styles.iconImg} />
         <div
-          style={{ position: 'relative', width: '90px', height: '4px', backgroundColor: '#535353', borderRadius: '2px', cursor: 'pointer' }}
+          className={styles.volumeContainer}
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
             setVolume(Math.round(ratio * 100));
           }}
         >
-          <div style={{
-            height: '100%', width: `${volume}%`,
-            backgroundColor: '#fff', borderRadius: '2px',
-            pointerEvents: 'none',
-          }} />
+          <div className={styles.volumeFill} style={{ width: `${volume}%` }} />
         </div>
       </div>
     </div>
   );
 }
+  

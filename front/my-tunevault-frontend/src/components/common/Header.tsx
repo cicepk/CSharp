@@ -9,6 +9,7 @@ import bellImg from '../../assets/icons/notifications.png';
 import arrowLeftImg from '../../assets/icons/arrow_left.png';
 import chevronRightImg from '../../assets/icons/chevron_right.png';
 import UploadModal from '../UploadModal';
+import styles from './Header.module.css';
 
 // Backend trả DateTime.UtcNow nhưng không có 'Z' suffix
 // → thêm 'Z' để JS parse đúng UTC → convert sang local time
@@ -178,381 +179,127 @@ export default function Header() {
 
   return (
     <>
-    <header style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      width: '100%',
-    }}>
-      {/* Page title area (left) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>
-          Good listening, <span style={{ color: '#1db954' }}>{user?.username || 'Guest'}</span>
-        </p>
-      </div>
-
-      {/* Right section: upload + bell + profile */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-
-        {/* Upload button */}
-        <button
-          onClick={() => setShowUpload(true)}
-          title="Upload track"
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '7px 14px',
-            borderRadius: '20px',
-            border: '1px solid #535353',
-            backgroundColor: 'transparent',
-            color: '#fff',
-            fontSize: '0.8rem', fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'border-color 0.15s, background-color 0.15s',
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = '#fff';
-            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = '#535353';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
-          </svg>
-          Upload
-        </button>
-
-        {/* Notification Bell */}
-        <div style={{ position: 'relative' }} ref={notifRef}>
-          <button
-            onClick={handleBellOpen}
-            title="Notifications"
-            style={{
-              width: '36px', height: '36px',
-              borderRadius: '50%',
-              backgroundColor: notifOpen ? '#3e3e3e' : 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'background-color 0.15s',
-              position: 'relative',
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#3e3e3e'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = notifOpen ? '#3e3e3e' : 'transparent'; }}
-          >
-            <img
-              src={bellImg}
-              alt="Notifications"
-              style={{ width: '18px', height: '18px', opacity: unreadCount > 0 ? 1 : 0.5 }}
-            />
-            {unreadCount > 0 && (
-              <span style={{
-                position: 'absolute', top: '4px', right: '4px',
-                width: '14px', height: '14px',
-                borderRadius: '50%',
-                backgroundColor: '#1db954',
-                fontSize: '0.6rem', fontWeight: 700,
-                color: '#000',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                lineHeight: 1,
-              }}>
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </button>
-
-          {/* Notification dropdown */}
-          {notifOpen && (
-            <div style={{
-              position: 'absolute', top: '44px', right: 0,
-              backgroundColor: '#282828',
-              borderRadius: '6px',
-              width: '300px',
-              zIndex: 200,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-              overflow: 'hidden',
-            }}>
-              {/* Header */}
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 14px',
-                borderBottom: '1px solid #3e3e3e',
-              }}>
-                <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#fff' }}>
-                  Notifications
-                </span>
-                {notifications.some(n => !n.isRead) && (
-                  <button
-                    onClick={handleMarkAllRead}
-                    style={{
-                      background: 'none', border: 'none',
-                      fontSize: '0.72rem', color: '#1db954',
-                      cursor: 'pointer', padding: 0,
-                    }}
-                  >
-                    Mark all read
-                  </button>
-                )}
-              </div>
-
-              {/* List */}
-              <div style={{ maxHeight: '340px', overflowY: 'auto' }}>
-                {loadingNotifs ? (
-                  <p style={{ margin: 0, padding: '14px', fontSize: '0.8rem', color: '#b3b3b3' }}>
-                    Loading...
-                  </p>
-                ) : notifications.length === 0 ? (
-                  <p style={{ margin: 0, padding: '14px', fontSize: '0.8rem', color: '#b3b3b3' }}>
-                    No notifications
-                  </p>
-                ) : (
-                  notifications.map(notif => (
-                    <div
-                      key={notif.id}
-                      onClick={() => !notif.isRead && handleMarkRead(notif.id)}
-                      style={{
-                        display: 'flex', alignItems: 'flex-start', gap: '10px',
-                        padding: '10px 14px',
-                        cursor: notif.isRead ? 'default' : 'pointer',
-                        backgroundColor: notif.isRead ? 'transparent' : 'rgba(29,185,84,0.06)',
-                        transition: 'background 0.15s',
-                        borderBottom: '1px solid #1a1a1a',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!notif.isRead) e.currentTarget.style.background = 'rgba(29,185,84,0.12)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = notif.isRead ? 'transparent' : 'rgba(29,185,84,0.06)';
-                      }}
-                    >
-                      {/* Unread dot */}
-                      <div style={{
-                        width: '8px', height: '8px', borderRadius: '50%',
-                        backgroundColor: notif.isRead ? 'transparent' : '#1db954',
-                        marginTop: '5px', flexShrink: 0,
-                      }} />
-                      <div style={{ flex: 1, overflow: 'hidden' }}>
-                        <p style={{
-                          margin: 0, fontSize: '0.75rem',
-                          color: notif.isRead ? '#b3b3b3' : '#fff',
-                          lineHeight: 1.4,
-                        }}>
-                          {notif.senderUsername
-                            ? <><strong>{notif.senderUsername}</strong> {notif.message}</>
-                            : notif.message
-                          }
-                        </p>
-                        <p style={{
-                          margin: '3px 0 0', fontSize: '0.68rem',
-                          color: '#6b6b6b',
-                        }}>
-                          {notifTypeLabel(notif.type)} · {parseUtc(notif.createdAt).toLocaleString('en-US', {
-                            month: 'short', day: 'numeric',
-                            hour: '2-digit', minute: '2-digit',
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+      <header className={styles.header}>
+        {/* Page title area (left) */}
+        <div className={styles.left}>
+          <p className={styles.greeting}>Good listening, <span className={styles.username}>{user?.username || 'Guest'}</span></p>
         </div>
 
-        {/* Profile avatar */}
-        <div style={{ position: 'relative' }} ref={menuRef}>
-          <button
-            onClick={handleOpen}
-            title={user?.username}
-            style={{
-              width: '36px', height: '36px',
-              borderRadius: '50%',
-              backgroundColor: hasAvatar ? 'transparent' : '#1db954',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '0.9rem', fontWeight: 700, color: '#000',
-              transition: 'transform 0.15s, background-color 0.15s',
-              flexShrink: 0,
-              overflow: 'hidden',
-              padding: 0,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.08)';
-              if (!hasAvatar) e.currentTarget.style.backgroundColor = '#1ed760';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              if (!hasAvatar) e.currentTarget.style.backgroundColor = '#1db954';
-            }}
-          >
-            {hasAvatar ? (
-              <img
-                src={user!.avatarUrl!}
-                alt={user?.username}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            ) : (
-              initial
-            )}
+        {/* Right section: upload + bell + profile */}
+        <div className={styles.right}>
+
+          {/* Upload button */}
+          <button onClick={() => setShowUpload(true)} title="Upload track" className={styles.uploadBtn}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+            Upload
           </button>
 
-          {/* Dropdown */}
-          {open && (
-            <div style={{
-              position: 'absolute', top: '44px', right: 0,
-              backgroundColor: '#282828',
-              borderRadius: '6px',
-              minWidth: '220px',
-              maxWidth: '320px',
-              zIndex: 200,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-              overflow: 'hidden',
-            }}>
+          {/* Notification Bell */}
+          <div className={styles.notifWrap} ref={notifRef}>
+            <button onClick={handleBellOpen} title="Notifications" className={`${styles.notifBtn} ${notifOpen ? styles.active : ''}`}>
+              <img src={bellImg} alt="Notifications" className={styles.notifIcon} style={{ opacity: unreadCount > 0 ? 1 : 0.5 }} />
+              {unreadCount > 0 && (<span className={styles.unreadBadge}>{unreadCount > 9 ? '9+' : unreadCount}</span>)}
+            </button>
 
-              {/* MAIN MENU */}
-              {view === 'menu' && (
-                <div>
-                  <div style={{
-                    padding: '12px 14px',
-                    borderBottom: '1px solid #3e3e3e',
-                  }}>
-                    <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 700, color: '#fff' }}>
-                      {user?.username}
-                    </p>
-                    <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#b3b3b3' }}>
-                      {user?.email}
-                    </p>
-                  </div>
-
-                  <MenuItem
-                    label="Profile"
-                    onClick={() => { setOpen(false); navigate('/profile'); }}
-                  />
-
-                  <MenuItem
-                    label="Recents"
-                    hasArrow
-                    onClick={handleRecents}
-                  />
-
-                  <div style={{ height: '1px', backgroundColor: '#3e3e3e', margin: '4px 0' }} />
-
-                  <MenuItem
-                    label="Log out"
-                    onClick={handleLogout}
-                    danger
-                  />
+            {notifOpen && (
+              <div className={styles.notifDropdown}>
+                <div className={styles.notifHeader}>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#fff' }}>Notifications</span>
+                  {notifications.some(n => !n.isRead) && (<button onClick={handleMarkAllRead} style={{ background: 'none', border: 'none', fontSize: '0.72rem', color: '#1db954', cursor: 'pointer', padding: 0 }}>Mark all read</button>)}
                 </div>
-              )}
-
-              {/* RECENTS PANEL */}
-              {view === 'recents' && (
-                <div>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    padding: '10px 14px',
-                    borderBottom: '1px solid #3e3e3e',
-                    cursor: 'pointer',
-                  }}
-                    onClick={() => setView('menu')}
-                  >
-                    <img src={arrowLeftImg} alt="Back" style={{ width: '14px', height: '14px', opacity: 0.7 }} />
-                    <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#fff' }}>
-                      Recents
-                    </span>
-                  </div>
-
-                  <div style={{ maxHeight: '340px', overflowY: 'auto' }}>
-                    {loadingHistory ? (
-                      <p style={{ margin: 0, padding: '14px', fontSize: '0.8rem', color: '#b3b3b3' }}>
-                        Loading...
-                      </p>
-                    ) : groups.length === 0 ? (
-                      <p style={{ margin: 0, padding: '14px', fontSize: '0.8rem', color: '#b3b3b3' }}>
-                        No play history yet
-                      </p>
-                    ) : (
-                      groups.map(group => (
-                        <div key={group.label}>
-                          <p style={{
-                            margin: 0,
-                            padding: '10px 14px 4px',
-                            fontSize: '0.72rem',
-                            fontWeight: 700,
-                            color: '#b3b3b3',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.06em',
-                          }}>
-                            {group.label}
+                <div className={styles.notifList}>
+                  {loadingNotifs ? (
+                    <p style={{ margin: 0, padding: '14px', fontSize: '0.8rem', color: '#b3b3b3' }}>Loading...</p>
+                  ) : notifications.length === 0 ? (
+                    <p style={{ margin: 0, padding: '14px', fontSize: '0.8rem', color: '#b3b3b3' }}>No notifications</p>
+                  ) : (
+                    notifications.map(notif => (
+                      <div key={notif.id} onClick={() => !notif.isRead && handleMarkRead(notif.id)} className={`${styles.notifItem} ${!notif.isRead ? styles.unread : ''}`}>
+                        <div className={styles.notifDot} style={{ backgroundColor: notif.isRead ? 'transparent' : '#1db954' }} />
+                        <div style={{ flex: 1, overflow: 'hidden' }} className="notifContent">
+                          <p style={{ margin: 0, fontSize: '0.75rem', color: notif.isRead ? '#b3b3b3' : '#fff', lineHeight: 1.4 }}>
+                            {notif.senderUsername ? <><strong>{notif.senderUsername}</strong> {notif.message}</> : notif.message}
                           </p>
-
-                          {group.items.map(item => (
-                            <div
-                              key={item.id}
-                              onClick={() => handlePlayFromHistory(item)}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: '10px',
-                                padding: '6px 14px',
-                                cursor: 'pointer',
-                                transition: 'background 0.15s',
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.background = '#3e3e3e'}
-                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                            >
-                              <img
-                                src={item.coverPath ?? FALLBACK_COVER}
-                                alt={item.title}
-                                onError={(e) => { e.currentTarget.src = FALLBACK_COVER; }}
-                                style={{
-                                  width: '36px', height: '36px',
-                                  objectFit: 'cover', borderRadius: '4px', flexShrink: 0,
-                                }}
-                              />
-                              <div style={{ overflow: 'hidden', flex: 1 }}>
-                                <p style={{
-                                  margin: 0, fontSize: '0.8rem', fontWeight: 600,
-                                  color: '#fff',
-                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                }}>
-                                  {item.title}
-                                </p>
-                                <p style={{
-                                  margin: '1px 0 0', fontSize: '0.72rem', color: '#b3b3b3',
-                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                }}>
-                                  {item.artist}
-                                </p>
-                              </div>
-                              <span style={{ fontSize: '0.68rem', color: '#6b6b6b', flexShrink: 0 }}>
-                                {parseUtc(item.playedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </div>
-                          ))}
+                          <p className={styles.notifMeta}>{notifTypeLabel(notif.type)} · {parseUtc(notif.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
-                      ))
-                    )}
-                  </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
+
+          {/* Profile avatar */}
+          <div className={styles.profileWrap} ref={menuRef}>
+            <button onClick={handleOpen} title={user?.username} className={`${styles.profileBtn} ${hasAvatar ? styles.hasAvatar : styles.noAvatar}`}>
+              {hasAvatar ? (<img src={user!.avatarUrl!} alt={user?.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />) : initial}
+            </button>
+
+            {open && (
+              <div className={styles.profileDropdown}>
+                {view === 'menu' && (
+                  <div>
+                    <div className={styles.menuSection}>
+                      <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 700, color: '#fff' }}>{user?.username}</p>
+                      <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#b3b3b3' }}>{user?.email}</p>
+                    </div>
+
+                    <button className={styles.menuItem} onClick={() => { setOpen(false); navigate('/profile'); }}>Profile</button>
+                    <button className={styles.menuItem} onClick={handleRecents}><span>Recents</span>{/* arrow handled in MenuItem previously */}</button>
+
+                    <div style={{ height: '1px', backgroundColor: '#3e3e3e', margin: '4px 0' }} />
+
+                    <button className={`${styles.menuItem} ${styles.danger}`} onClick={handleLogout}>Log out</button>
+                  </div>
+                )}
+
+                {view === 'recents' && (
+                  <div>
+                    <div className={styles.recentsHeader} onClick={() => setView('menu')}>
+                      <img src={arrowLeftImg} alt="Back" style={{ width: '14px', height: '14px', opacity: 0.7 }} />
+                      <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#fff' }}>Recents</span>
+                    </div>
+
+                    <div className={styles.recentsList}>
+                      {loadingHistory ? (
+                        <p style={{ margin: 0, padding: '14px', fontSize: '0.8rem', color: '#b3b3b3' }}>Loading...</p>
+                      ) : groups.length === 0 ? (
+                        <p style={{ margin: 0, padding: '14px', fontSize: '0.8rem', color: '#b3b3b3' }}>No play history yet</p>
+                      ) : (
+                        groups.map(group => (
+                          <div key={group.label}>
+                            <p className={styles.recentGroupTitle}>{group.label}</p>
+
+                            {group.items.map(item => (
+                              <div key={item.id} onClick={() => handlePlayFromHistory(item)} className={styles.recentItem}>
+                                <img src={item.coverPath ?? FALLBACK_COVER} alt={item.title} onError={(e) => { e.currentTarget.src = FALLBACK_COVER; }} className={styles.recentCover} />
+                                <div className={styles.recentText} style={{ overflow: 'hidden', flex: 1 }}>
+                                  <p>{item.title}</p>
+                                  <p className="sub" style={{ margin: '1px 0 0', fontSize: '0.72rem', color: '#b3b3b3' }}>{item.artist}</p>
+                                </div>
+                                <span className={styles.recentTime}>{parseUtc(item.playedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
         </div>
+      </header>
 
-      </div>
-    </header>
-
-    {showUpload && (
-      <UploadModal
-        onClose={() => setShowUpload(false)}
-        onUploaded={() => setShowUpload(false)}
-      />
-    )}
+      {showUpload && (
+        <UploadModal
+          onClose={() => setShowUpload(false)}
+          onUploaded={() => setShowUpload(false)}
+        />
+      )}
     </>
   );
 }

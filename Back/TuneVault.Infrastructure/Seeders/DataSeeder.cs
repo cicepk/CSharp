@@ -14,32 +14,206 @@ public class DataSeeder : IDataSeeder
         _connectionFactory = connectionFactory;
     }
 
+    /// Check if UserProfiles table exists with proper schema
+    private async Task<bool> SchemaIsValidAsync()
+    {
+        const string sql = @"
+            SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = 'UserProfiles' AND COLUMN_NAME = 'Bio'";
+
+        try
+        {
+            using (var connection = _connectionFactory.CreateConnection())
+            {
+                var command = new CommandDefinition(sql);
+                var count = await connection.ExecuteScalarAsync<int>(command);
+                return count > 0;  // Bio column exists = schema is valid
+            }
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// Check if UserProfiles table exists
+    private async Task<bool> TableExistsAsync()
+    {
+        const string sql = @"
+            SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES 
+            WHERE TABLE_NAME = 'UserProfiles'";
+
+        try
+        {
+            using (var connection = _connectionFactory.CreateConnection())
+            {
+                var command = new CommandDefinition(sql);
+                var count = await connection.ExecuteScalarAsync<int>(command);
+                return count > 0;
+            }
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// Initialize database schema by executing schema.sql
+    private async Task InitializeDatabaseSchemaAsync()
+    {
+        Console.WriteLine(" 📋 Creating database schema...");
+        
+        // The assembly is loaded from: TuneVault.API/bin/Debug/net10.0/TuneVault.Infrastructure.dll
+        // We need to get to: TuneVault.Infrastructure/Database/schema.sql
+        // Start from assembly location: D:\tune_vault\CSharp\Back\TuneVault.API\bin\Debug\net10.0\
+        var assemblyLocation = System.Reflection.Assembly.GetExecutingAssembly().Location;
+        var binDir = System.IO.Path.GetDirectoryName(assemblyLocation);  // net10.0
+        
+        if (binDir == null)
+            throw new InvalidOperationException("Cannot determine assembly directory");
+        
+        // Navigate up: net10.0 -> Debug -> bin -> TuneVault.API -> Back
+        var backDir = binDir;
+        for (int i = 0; i < 4; i++)
+        {
+            backDir = System.IO.Path.GetDirectoryName(backDir);
+            if (backDir == null)
+                throw new InvalidOperationException("Cannot navigate to Back directory");
+        }
+        
+        // Now go into TuneVault.Infrastructure/Database
+        var schemaPath = System.IO.Path.Combine(backDir, "TuneVault.Infrastructure", "Database", "schema.sql");
+        schemaPath = System.IO.Path.GetFullPath(schemaPath);
+
+        if (!System.IO.File.Exists(schemaPath))
+        {
+            Console.WriteLine($" ⚠️  Schema file not found at: {schemaPath}");
+            throw new FileNotFoundException($"Schema file not found: {schemaPath}");
+        }
+
+        var schema = await System.IO.File.ReadAllTextAsync(schemaPath);
+
+        try
+        {
+            using (var connection = _connectionFactory.CreateConnection())
+            {
+                connection.Open();
+                
+                // First, disable all foreign key constraints
+                Console.WriteLine(" 🔓 Disabling foreign key constraints...");
+                try
+                {
+                    var cmd = new CommandDefinition("EXEC sp_MSForEachTable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL'");
+                    await connection.ExecuteAsync(cmd);
+                }
+                catch
+                {
+                    // Might fail if no tables exist, that's OK
+                }
+                
+                // Drop all tables dynamically
+                Console.WriteLine(" 🗑️  Dropping existing tables...");
+                try
+                {
+                    var dropTablesSQL = @"
+                        DECLARE @sql NVARCHAR(MAX);
+                        SELECT @sql = ISNULL(@sql + ';', '') + 'DROP TABLE [' + t.TABLE_NAME + ']'
+                        FROM INFORMATION_SCHEMA.TABLES t
+                        WHERE t.TABLE_TYPE = 'BASE TABLE' 
+                        AND t.TABLE_SCHEMA = 'dbo'
+                        
+                        IF @sql IS NOT NULL
+                            EXEC sp_executesql @sql
+                    ";
+                    var cmd = new CommandDefinition(dropTablesSQL);
+                    await connection.ExecuteAsync(cmd);
+                    Console.WriteLine(" ✅ Old tables dropped");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($" ⚠️  Could not drop tables: {ex.Message}");
+                }
+                
+                // Execute schema creation
+                Console.WriteLine(" 📝 Creating new schema...");
+                var statements = schema.Split(new[] { "\r\nGO\r\n", "\nGO\n", "\r\nGO", "\nGO", "GO" }, StringSplitOptions.RemoveEmptyEntries);
+                
+                int statementCount = 0;
+                foreach (var statement in statements)
+                {
+                    var trimmed = statement.Trim();
+                    if (!string.IsNullOrWhiteSpace(trimmed))
+                    {
+                        try
+                        {
+                            var command = new CommandDefinition(trimmed);
+                            await connection.ExecuteAsync(command);
+                            statementCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"   ⚠️  Statement failed: {ex.Message}");
+                            // Continue with next statement - some might be dependent
+                        }
+                    }
+                }
+
+                Console.WriteLine($" ✅ Database schema created successfully! ({statementCount} statements executed)");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($" ❌ Error creating schema: {ex.Message}");
+            throw;
+        }
+    }
+
     /// Kiểm tra xem database đã có data chưa
     public async Task<bool> IsSeededAsync()
     {
+        // First check if table exists
+        if (!await TableExistsAsync())
+        {
+            return false;
+        }
+
         const string sql = "SELECT COUNT(*) FROM UserProfiles";
 
-        using (var connection = _connectionFactory.CreateConnection())
+        try
         {
-            var command = new CommandDefinition(sql);
-            var count = await connection.ExecuteScalarAsync<int>(command);
-            
-            // Nếu đã có ≥ 1 user → database đã được seed
-            return count > 0;
+            using (var connection = _connectionFactory.CreateConnection())
+            {
+                var command = new CommandDefinition(sql);
+                var count = await connection.ExecuteScalarAsync<int>(command);
+                
+                // Nếu đã có ≥ 1 user → database đã được seed
+                return count > 0;
+            }
+        }
+        catch
+        {
+            return false;
         }
     }
 
     /// Thực hiện seeding tất cả dữ liệu
     public async Task SeedAsync()
     {
-        // Kiểm tra database đã seed chưa
+        // First ensure database schema is valid (recreate if schema is outdated)
+        if (!await SchemaIsValidAsync())
+        {
+            Console.WriteLine(" ⚠️  Schema is invalid or outdated. Reinitializing...");
+            await InitializeDatabaseSchemaAsync();
+        }
+
+        // Check if database has already been seeded
         if (await IsSeededAsync())
         {
-            Console.WriteLine(" Database đã được seed trước đó, bỏ qua seeding.");
+            Console.WriteLine(" ✅ Database already seeded, skipping data seeding.");
             return;
         }
 
-        Console.WriteLine(" Bắt đầu seed dữ liệu vào database...");
+        Console.WriteLine(" 🌱 Starting data seeding...");
 
         try
         {

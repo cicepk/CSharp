@@ -1,0 +1,39 @@
+.header { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.left { display: flex; align-items: center; gap: 0.75rem; }
+.greeting { margin: 0; font-size: 1.1rem; font-weight: 700; color: #fff; }
+.username { color: #1db954; }
+.right { display: flex; align-items: center; gap: 8px; }
+.uploadBtn { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 20px; border: 1px solid #535353; background-color: transparent; color: #fff; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s, background-color 0.15s; flex-shrink: 0; }
+.uploadBtn:hover { border-color: #fff; background-color: rgba(255,255,255,0.08); }
+.notifWrap { position: relative; }
+.notifBtn { width: 36px; height: 36px; border-radius: 50%; background-color: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.15s; position: relative; flex-shrink: 0; }
+.notifBtn.active { background-color: #3e3e3e; }
+.notifIcon { width: 18px; height: 18px; }
+.unreadBadge { position: absolute; top: 4px; right: 4px; width: 14px; height: 14px; border-radius: 50%; background-color: #1db954; font-size: 0.6rem; font-weight: 700; color: #000; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.notifDropdown { position: absolute; top: 44px; right: 0; background-color: #282828; border-radius: 6px; width: 300px; z-index: 200; box-shadow: 0 8px 32px rgba(0,0,0,0.6); overflow: hidden; }
+.notifHeader { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #3e3e3e; }
+.notifList { max-height: 340px; overflow-y: auto; }
+.notifItem { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; cursor: pointer; transition: background 0.15s; border-bottom: 1px solid #1a1a1a; }
+.notifItem.unread { background-color: rgba(29,185,84,0.06); }
+.notifItem:hover.unread { background-color: rgba(29,185,84,0.12); }
+.notifDot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.notifContent p { margin: 0; font-size: 0.75rem; line-height: 1.4; }
+.notifMeta { margin: 3px 0 0; font-size: 0.68rem; color: #6b6b6b; }
+.profileWrap { position: relative; }
+.profileBtn { width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; color: #000; transition: transform 0.15s, background-color 0.15s; flex-shrink: 0; overflow: hidden; padding: 0; }
+.profileBtn.hasAvatar { background-color: transparent; }
+.profileBtn.noAvatar { background-color: #1db954; }
+.profileDropdown { position: absolute; top: 44px; right: 0; background-color: #282828; border-radius: 6px; min-width: 220px; max-width: 320px; z-index: 200; box-shadow: 0 8px 32px rgba(0,0,0,0.6); overflow: hidden; }
+.menuSection { padding: 12px 14px; border-bottom: 1px solid #3e3e3e; }
+.menuItem { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 14px; background: none; border: none; color: #fff; font-size: 0.875rem; cursor: pointer; text-align: left; transition: background 0.15s; }
+.menuItem:hover { background: #3e3e3e; }
+.menuItem.danger { color: #ff6b6b; }
+.recentsHeader { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid #3e3e3e; cursor: pointer; }
+.recentsList { max-height: 340px; overflow-y: auto; }
+.recentGroupTitle { margin: 0; padding: 10px 14px 4px; font-size: 0.72rem; font-weight: 700; color: #b3b3b3; text-transform: uppercase; letter-spacing: 0.06em; }
+.recentItem { display: flex; align-items: center; gap: 10px; padding: 6px 14px; cursor: pointer; transition: background 0.15s; }
+.recentItem:hover { background: #3e3e3e; }
+.recentCover { width: 36px; height: 36px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+.recentText p { margin: 0; font-size: 0.8rem; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recentText .sub { margin: 1px 0 0; font-size: 0.72rem; color: #b3b3b3; }
+.recentTime { font-size: 0.68rem; color: #6b6b6b; flex-shrink: 0; }

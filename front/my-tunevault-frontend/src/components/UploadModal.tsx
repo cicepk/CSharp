@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import apiService from '../services/ApiService';
+import styles from './UploadModal.module.css';
 
 interface Props {
   onClose: () => void;
@@ -94,51 +95,15 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
   };
 
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0,
-        backgroundColor: 'rgba(0,0,0,0.75)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 400,
-      }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: '#242424',
-          borderRadius: '12px',
-          width: '520px',
-          maxWidth: '95vw',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
-        }}
-      >
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '1.25rem 1.5rem',
-          borderBottom: '1px solid #3e3e3e',
-        }}>
-          <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>
-            Upload track
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#b3b3b3', fontSize: '1.2rem', lineHeight: 1,
-              padding: '2px 6px', borderRadius: '4px',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = '#3e3e3e'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = '#b3b3b3'; e.currentTarget.style.background = 'none'; }}
-          >
-            ✕
-          </button>
+        <div className={styles.header}>
+          <h2 className={styles.title}>Upload track</h2>
+          <button className={styles.closeBtn} onClick={onClose}>✕</button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ padding: '1.5rem' }}>
+        <form onSubmit={handleSubmit} className={styles.form}>
 
           {/* Drop zone */}
           {!mediaFile ? (
@@ -147,18 +112,7 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
               onClick={() => mediaInputRef.current?.click()}
-              style={{
-                border: `2px dashed ${dragOver ? '#1db954' : '#535353'}`,
-                borderRadius: '10px',
-                padding: '2.5rem 1.5rem',
-                textAlign: 'center',
-                cursor: 'pointer',
-                backgroundColor: dragOver ? 'rgba(29,185,84,0.06)' : 'transparent',
-                transition: 'all 0.15s',
-                marginBottom: '1.25rem',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1db954'}
-              onMouseLeave={(e) => { if (!dragOver) e.currentTarget.style.borderColor = '#535353'; }}
+              className={`${styles.dropzone} ${dragOver ? styles.dragOver : ''}`}
             >
               <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🎵</div>
               <p style={{ margin: '0 0 6px', fontSize: '0.95rem', fontWeight: 600, color: '#fff' }}>
@@ -173,41 +127,18 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
             </div>
           ) : (
             /* Selected file info */
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '12px',
-              padding: '12px 14px',
-              backgroundColor: '#2a2a2a',
-              borderRadius: '8px',
-              marginBottom: '1.25rem',
-              border: '1px solid #3e3e3e',
-            }}>
-              <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>
-                {mediaType === 1 ? '🎵' : '🎬'}
-              </span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{
-                  margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#fff',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {mediaFile.name}
-                </p>
-                <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#b3b3b3' }}>
-                  {mediaType === 1 ? 'Audio' : 'Video'} · {formatBytes(mediaFile.size)}
-                </p>
+            <div className={styles.fileInfo}>
+              <span className={styles.fileIcon}>{mediaType === 1 ? '🎵' : '🎬'}</span>
+              <div className={styles.fileMeta}>
+                <p className={styles.fileName}>{mediaFile.name}</p>
+                <p className={styles.fileSub}>{mediaType === 1 ? 'Audio' : 'Video'} · {formatBytes(mediaFile.size)}</p>
               </div>
               {!uploading && (
                 <button
                   type="button"
                   onClick={() => { setMediaFile(null); setTitle(''); setError(''); }}
-                  style={{
-                    background: 'none', border: 'none', color: '#b3b3b3',
-                    cursor: 'pointer', fontSize: '1rem', flexShrink: 0,
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#b3b3b3'}
-                >
-                  ✕
-                </button>
+                  className={styles.removeBtn}
+                >✕</button>
               )}
             </div>
           )}
@@ -225,11 +156,11 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
 
               {/* Cover art — large, centered, drag & drop support */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+              <div className={styles.coverArea}>
                 <div
                   onClick={() => !uploading && coverInputRef.current?.click()}
-                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); if (!uploading) e.currentTarget.style.borderColor = '#1db954'; }}
-                  onDragLeave={(e) => { e.currentTarget.style.borderColor = coverPreview ? 'transparent' : '#535353'; }}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); if (!uploading) setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
                   onDrop={(e) => {
                     e.preventDefault(); e.stopPropagation();
                     if (uploading) return;
@@ -238,77 +169,27 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
                       setCoverFile(f);
                       setCoverPreview(URL.createObjectURL(f));
                     }
-                    e.currentTarget.style.borderColor = 'transparent';
+                    setDragOver(false);
                   }}
-                  style={{
-                    width: '140px', height: '140px',
-                    borderRadius: '10px',
-                    backgroundColor: coverPreview ? 'transparent' : '#2a2a2a',
-                    cursor: uploading ? 'default' : 'pointer',
-                    overflow: 'hidden',
-                    border: `2px dashed ${coverPreview ? 'transparent' : '#535353'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    position: 'relative',
-                    transition: 'border-color 0.15s, box-shadow 0.15s',
-                    boxShadow: coverPreview ? '0 4px 20px rgba(0,0,0,0.5)' : 'none',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!uploading) e.currentTarget.style.borderColor = '#1db954';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = coverPreview ? 'transparent' : '#535353';
-                  }}
+                  className={`${styles.coverBox} ${coverPreview ? 'hasPreview' : ''} ${dragOver ? styles.dragOver : ''}`}
                 >
                   {coverPreview ? (
                     <>
-                      <img
-                        src={coverPreview}
-                        alt="cover preview"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                      {/* Hover overlay */}
+                      <img src={coverPreview} alt="cover preview" className={styles.coverImg} />
                       {!uploading && (
-                        <div
-                          className="cover-overlay"
-                          style={{
-                            position: 'absolute', inset: 0,
-                            backgroundColor: 'rgba(0,0,0,0.55)',
-                            display: 'flex', flexDirection: 'column',
-                            alignItems: 'center', justifyContent: 'center', gap: '6px',
-                            opacity: 0, transition: 'opacity 0.18s',
-                            borderRadius: '8px',
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                          onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
-                        >
+                        <div className={styles.coverOverlay}>
                           <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff">
                             <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                           </svg>
                           <span style={{ fontSize: '0.72rem', color: '#fff', fontWeight: 600 }}>Change photo</span>
                         </div>
                       )}
-                      {/* Remove button */}
                       {!uploading && (
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCoverFile(null);
-                            setCoverPreview(null);
-                          }}
-                          style={{
-                            position: 'absolute', top: '6px', right: '6px',
-                            width: '22px', height: '22px',
-                            borderRadius: '50%',
-                            backgroundColor: 'rgba(0,0,0,0.7)',
-                            border: 'none', cursor: 'pointer',
-                            color: '#fff', fontSize: '0.7rem', lineHeight: 1,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            zIndex: 1,
-                          }}
-                        >
-                          ✕
-                        </button>
+                          onClick={(e) => { e.stopPropagation(); setCoverFile(null); setCoverPreview(null); }}
+                          className={styles.coverRemove}
+                        >✕</button>
                       )}
                     </>
                   ) : (
@@ -329,13 +210,7 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
                 </p>
               </div>
 
-              <input
-                ref={coverInputRef}
-                type="file"
-                accept=".jpg,.jpeg,.png,.webp"
-                style={{ display: 'none' }}
-                onChange={handleCoverChange}
-              />
+              <input ref={coverInputRef} type="file" accept=".jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={handleCoverChange} />
 
               {/* Title + Artist */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -346,9 +221,7 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
                   onChange={(e) => { setTitle(e.target.value); setError(''); }}
                   maxLength={200}
                   disabled={uploading}
-                  style={fieldStyle(uploading)}
-                  onFocus={(e) => e.currentTarget.style.borderColor = '#1db954'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = '#535353'}
+                  className={`${styles.inputField} ${uploading ? styles.disabled : ''}`}
                 />
                 <input
                   type="text"
@@ -357,30 +230,19 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
                   onChange={(e) => { setArtist(e.target.value); setError(''); }}
                   maxLength={200}
                   disabled={uploading}
-                  style={fieldStyle(uploading)}
-                  onFocus={(e) => e.currentTarget.style.borderColor = '#1db954'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = '#535353'}
+                  className={`${styles.inputField} ${uploading ? styles.disabled : ''}`}
                 />
               </div>
 
               {/* Media type toggle */}
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className={styles.mediaTypeGroup}>
                 {([1, 2] as const).map((t) => (
                   <button
                     key={t}
                     type="button"
                     disabled={uploading}
                     onClick={() => setMediaType(t)}
-                    style={{
-                      padding: '6px 16px',
-                      borderRadius: '20px',
-                      border: `1px solid ${mediaType === t ? '#1db954' : '#535353'}`,
-                      backgroundColor: mediaType === t ? 'rgba(29,185,84,0.15)' : 'transparent',
-                      color: mediaType === t ? '#1db954' : '#b3b3b3',
-                      fontSize: '0.8rem', fontWeight: 600,
-                      cursor: uploading ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.15s',
-                    }}
+                    className={`${styles.mediaTypeBtn} ${mediaType === t ? styles.active : ''}`}
                   >
                     {t === 1 ? '🎵 Audio' : '🎬 Video'}
                   </button>
@@ -388,26 +250,13 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
               </div>
 
               {/* Error */}
-              {error && (
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#e53e3e' }}>{error}</p>
-              )}
+              {error && <p className={styles.errorMsg}>{error}</p>}
 
               {/* Progress bar */}
               {uploading && (
                 <div>
-                  <div style={{
-                    height: '4px', borderRadius: '2px',
-                    backgroundColor: '#3e3e3e',
-                    overflow: 'hidden',
-                    marginBottom: '6px',
-                  }}>
-                    <div style={{
-                      height: '100%',
-                      width: `${progress}%`,
-                      backgroundColor: done ? '#1db954' : '#1db954',
-                      transition: 'width 0.2s',
-                      borderRadius: '2px',
-                    }} />
+                  <div className={styles.progressTrack}>
+                    <div className={styles.progressFill} style={{ width: `${progress}%` }} />
                   </div>
                   <p style={{ margin: 0, fontSize: '0.75rem', color: '#b3b3b3', textAlign: 'center' }}>
                     {done ? '✓ Upload complete!' : `Uploading... ${progress}%`}
@@ -417,38 +266,9 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
 
               {/* Submit */}
               {!uploading && (
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '0.25rem' }}>
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    style={{
-                      padding: '10px 20px', borderRadius: '20px',
-                      border: '1px solid #535353', backgroundColor: 'transparent',
-                      color: '#fff', fontSize: '0.875rem', fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    style={{
-                      padding: '10px 28px', borderRadius: '20px',
-                      border: 'none', backgroundColor: '#1db954',
-                      color: '#000', fontSize: '0.875rem', fontWeight: 700,
-                      cursor: 'pointer', transition: 'background-color 0.15s, transform 0.1s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#1ed760';
-                      e.currentTarget.style.transform = 'scale(1.03)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#1db954';
-                      e.currentTarget.style.transform = 'scale(1)';
-                    }}
-                  >
-                    Upload
-                  </button>
+                <div className={styles.buttonsRow}>
+                  <button type="button" onClick={onClose} className={`${styles.btn} ${styles.cancel}`}>Cancel</button>
+                  <button type="submit" className={`${styles.btn} ${styles.submit}`}>Upload</button>
                 </div>
               )}
             </div>

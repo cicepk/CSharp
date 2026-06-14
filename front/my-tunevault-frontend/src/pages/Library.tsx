@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../services/ApiService';
+import styles from './Library.module.css';
 import type { Playlist } from '../types';
 
 async function handleToggleVisibility(
@@ -71,9 +72,7 @@ export default function Library() {
   if (isLoading) {
     return (
       <div style={{ padding: '2rem' }}>
-        <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#fff' }}>
-          Your Library
-        </h2>
+        <h2 className={styles.title}>Your Library</h2>
         <p style={{ color: '#b3b3b3' }}>Loading playlists...</p>
       </div>
     );
@@ -82,189 +81,46 @@ export default function Library() {
   if (error) {
     return (
       <div style={{ padding: '2rem' }}>
-        <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#fff' }}>
-          Your Library
-        </h2>
+        <h2 className={styles.title}>Your Library</h2>
         <p style={{ color: '#dc2626' }}>Error: {error}</p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', padding: '2rem' }}>
+    <div className={styles.container}>
       {/* Title row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showForm ? '1rem' : '1.5rem' }}>
-        <h2 style={{ fontSize: '1.875rem', fontWeight: 'bold', margin: 0, color: '#fff' }}>
-          Your Library
-        </h2>
-        <button
-          onClick={() => { setShowForm(v => !v); setFormError(''); }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '8px 16px',
-            backgroundColor: '#1db954',
-            border: 'none', borderRadius: '20px',
-            color: '#000', fontSize: '0.875rem', fontWeight: 700,
-            cursor: 'pointer', transition: 'background-color 0.15s, transform 0.1s',
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#1ed760';
-            e.currentTarget.style.transform = 'scale(1.03)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#1db954';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-          </svg>
+      <div className={styles.titleRow} style={{ marginBottom: showForm ? '1rem' : '1.5rem' }}>
+        <h2 className={styles.title}>Your Library</h2>
+        <button onClick={() => { setShowForm(v => !v); setFormError(''); }} className={styles.newBtn} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#1ed760'; e.currentTarget.style.transform = 'scale(1.03)'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#1db954'; e.currentTarget.style.transform = 'scale(1)'; }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
           New Playlist
         </button>
       </div>
 
       {/* Create form */}
       {showForm && (
-        <form
-          onSubmit={handleCreate}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            padding: '14px 16px',
-            backgroundColor: '#282828',
-            borderRadius: '8px',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="Playlist name..."
-            value={formName}
-            onChange={(e) => { setFormName(e.target.value); setFormError(''); }}
-            maxLength={80}
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              backgroundColor: '#3e3e3e',
-              border: formError ? '1px solid #e53e3e' : '1px solid transparent',
-              borderRadius: '4px',
-              color: '#fff', fontSize: '0.875rem',
-              outline: 'none',
-            }}
-            onFocus={(e) => e.currentTarget.style.border = '1px solid #1db954'}
-            onBlur={(e) => { e.currentTarget.style.border = formError ? '1px solid #e53e3e' : '1px solid transparent'; }}
-          />
-          {formError && (
-            <span style={{ fontSize: '0.75rem', color: '#e53e3e', flexShrink: 0 }}>{formError}</span>
-          )}
-          <button
-            type="submit"
-            disabled={formLoading}
-            style={{
-              padding: '8px 18px',
-              backgroundColor: '#1db954',
-              border: 'none', borderRadius: '4px',
-              color: '#000', fontSize: '0.875rem', fontWeight: 700,
-              cursor: formLoading ? 'not-allowed' : 'pointer',
-              opacity: formLoading ? 0.7 : 1,
-              flexShrink: 0,
-            }}
-          >
-            {formLoading ? 'Creating...' : 'Create'}
-          </button>
-          <button
-            type="button"
-            onClick={handleCancelForm}
-            style={{
-              padding: '8px 14px',
-              backgroundColor: 'transparent',
-              border: '1px solid #535353', borderRadius: '4px',
-              color: '#b3b3b3', fontSize: '0.875rem',
-              cursor: 'pointer', flexShrink: 0,
-            }}
-          >
-            Cancel
-          </button>
+        <form onSubmit={handleCreate} className={styles.form}>
+          <input ref={inputRef} type="text" placeholder="Playlist name..." value={formName} onChange={(e) => { setFormName(e.target.value); setFormError(''); }} maxLength={80} className={styles.input} onFocus={(e) => e.currentTarget.style.border = '1px solid #1db954'} onBlur={(e) => { e.currentTarget.style.border = formError ? '1px solid #e53e3e' : '1px solid transparent'; }} />
+          {formError && (<span style={{ fontSize: '0.75rem', color: '#e53e3e', flexShrink: 0 }}>{formError}</span>)}
+          <button type="submit" disabled={formLoading} className={styles.newBtn} style={{ padding: '8px 18px', borderRadius: '4px' }}>{formLoading ? 'Creating...' : 'Create'}</button>
+          <button type="button" onClick={handleCancelForm} className={styles.newBtn} style={{ backgroundColor: 'transparent', border: '1px solid #535353', color: '#b3b3b3', padding: '8px 14px' }}>Cancel</button>
         </form>
       )}
 
       {/* Playlists grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-        gap: '1rem',
-      }}>
+      <div className={styles.grid}>
         {playlists.length === 0 ? (
-          <div style={{
-            gridColumn: '1 / -1',
-            padding: '2rem',
-            backgroundColor: '#282828',
-            borderRadius: '8px',
-            textAlign: 'center',
-          }}>
-            <p style={{ color: '#b3b3b3', margin: 0 }}>No playlists yet — create one above!</p>
-          </div>
+          <div className={styles.emptyCard}><p style={{ color: '#b3b3b3', margin: 0 }}>No playlists yet — create one above!</p></div>
         ) : (
           playlists.map((playlist) => (
-            <div
-              key={playlist.id}
-              onClick={() => navigate(`/playlist/${playlist.id}`)}
-              style={{
-                backgroundColor: '#282828',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                overflow: 'hidden',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#1db954';
-                e.currentTarget.style.transform = 'scale(1.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#282828';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              <img
-                src={playlist.cover || FALLBACK_COVER}
-                alt={playlist.title}
-                style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }}
-                onError={(e) => { e.currentTarget.src = FALLBACK_COVER; }}
-              />
-              <div style={{ padding: '0.75rem 1rem 1rem' }}>
-                <p style={{
-                  fontWeight: 'bold', fontSize: '0.875rem',
-                  margin: '0 0 4px',
-                  color: '#fff',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {playlist.title}
-                </p>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-                  <p style={{ fontSize: '0.75rem', margin: 0, color: '#b3b3b3' }}>
-                    {playlist.trackCount ?? playlist.tracks?.length ?? 0} tracks
-                  </p>
-                  <button
-                    onClick={(e) => handleToggleVisibility(playlist, setPlaylists, e)}
-                    title={playlist.isPublic ? 'Make private' : 'Make public'}
-                    style={{
-                      padding: '2px 8px',
-                      borderRadius: '10px',
-                      border: 'none',
-                      fontSize: '0.65rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                      backgroundColor: playlist.isPublic ? 'rgba(29,185,84,0.2)' : 'rgba(255,255,255,0.1)',
-                      color: playlist.isPublic ? '#1db954' : '#b3b3b3',
-                      transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-                  >
-                    {playlist.isPublic ? 'Public' : 'Private'}
-                  </button>
+            <div key={playlist.id} onClick={() => navigate(`/playlist/${playlist.id}`)} className={styles.card} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1db954'; (e.currentTarget as HTMLElement).style.transform = 'scale(1.05)'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#282828'; (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}>
+              <img src={playlist.cover || FALLBACK_COVER} alt={playlist.title} className={styles.cardImg} onError={(e) => { e.currentTarget.src = FALLBACK_COVER; }} />
+              <div className={styles.cardBody}>
+                <p className={styles.cardTitle}>{playlist.title}</p>
+                <div className={styles.cardRow}>
+                  <p style={{ fontSize: '0.75rem', margin: 0, color: '#b3b3b3' }}>{playlist.trackCount ?? playlist.tracks?.length ?? 0} tracks</p>
+                  <button onClick={(e) => handleToggleVisibility(playlist, setPlaylists, e)} title={playlist.isPublic ? 'Make private' : 'Make public'} className={styles.toggleBtn} style={{ backgroundColor: playlist.isPublic ? 'rgba(29,185,84,0.2)' : 'rgba(255,255,255,0.1)', color: playlist.isPublic ? '#1db954' : '#b3b3b3' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '0.7'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}>{playlist.isPublic ? 'Public' : 'Private'}</button>
                 </div>
               </div>
             </div>

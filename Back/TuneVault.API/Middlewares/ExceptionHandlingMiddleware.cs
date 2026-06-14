@@ -32,6 +32,7 @@ public class ExceptionHandlingMiddleware
 
         string message;
         string[] errors;
+        var isDevelopment = context.RequestServices.GetService<IWebHostEnvironment>()?.IsDevelopment() ?? false;
 
         switch (exception)
         {
@@ -66,10 +67,14 @@ public class ExceptionHandlingMiddleware
                 break;
 
             default:
-                _logger.LogError(exception, "Unhandled exception: {Message}", exception.Message);
+                _logger.LogError(exception, "❌ Unhandled exception: {Message}\n{StackTrace}", 
+                    exception.Message, exception.StackTrace);
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                 message = "Đã xảy ra lỗi hệ thống.";
-                errors = [message];
+                // In development, include exception details for debugging
+                errors = isDevelopment 
+                    ? [exception.Message, exception.GetType().Name, exception.StackTrace ?? "No stack trace"]
+                    : [message];
                 break;
         }
 

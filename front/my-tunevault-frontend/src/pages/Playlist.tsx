@@ -4,6 +4,7 @@ import apiService from '../services/ApiService';
 import { useMusic } from '../hooks/MusicContext';
 import type { Playlist, Song } from '../types';
 import ShareModal from '../components/ShareModal';
+import styles from './Playlist.module.css';
 import playButtonImg from '../assets/icons/play-button.png';
 import pauseImg from '../assets/icons/pause.png';
 
@@ -170,50 +171,17 @@ export default function PlaylistPage() {
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className={styles.container}>
       {/* Header section */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1.5rem', marginBottom: '2rem' }}>
-        <img
-          src={coverSrc}
-          alt={playlist.title}
-          style={{ width: '160px', height: '160px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0 }}
-          onError={(e) => { e.currentTarget.src = FALLBACK_COVER; }}
-        />
+      <div className={styles.headerRow}>
+        <img src={coverSrc} alt={playlist.title} className={styles.cover} onError={(e) => { e.currentTarget.src = FALLBACK_COVER; }} />
         <div>
-          <p style={{ margin: '0 0 4px', fontSize: '0.75rem', color: '#b3b3b3', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Playlist
-          </p>
-          <h2 style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0 0 8px', color: '#fff' }}>
-            {playlist.title}
-          </h2>
-          {playlist.description && (
-            <p style={{ margin: '0 0 8px', fontSize: '0.875rem', color: '#b3b3b3' }}>
-              {playlist.description}
-            </p>
-          )}
-          <p style={{ margin: '0 0 16px', fontSize: '0.8rem', color: '#b3b3b3' }}>
-            {tracks.length} track{tracks.length !== 1 ? 's' : ''}
-          </p>
+          <p className={styles.metaTitle}>Playlist</p>
+          <h2 className={styles.playlistTitle}>{playlist.title}</h2>
+          {playlist.description && (<p className={styles.playlistDesc}>{playlist.description}</p>)}
+          <p className={styles.playCount}>{tracks.length} track{tracks.length !== 1 ? 's' : ''}</p>
           {tracks.length > 0 && (
-            <button
-              onClick={handlePlayAll}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '10px 24px',
-                backgroundColor: '#1db954',
-                border: 'none', borderRadius: '20px',
-                color: '#000', fontSize: '0.875rem', fontWeight: 700,
-                cursor: 'pointer', transition: 'background-color 0.15s, transform 0.1s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#1ed760';
-                e.currentTarget.style.transform = 'scale(1.03)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#1db954';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
+            <button onClick={handlePlayAll} className={styles.playBtn} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1ed760'; (e.currentTarget as HTMLElement).style.transform = 'scale(1.03)'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1db954'; (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}>
               <img src={playButtonImg} alt="Play" style={{ width: '14px', height: '14px' }} />
               Play All
             </button>
@@ -223,20 +191,10 @@ export default function PlaylistPage() {
 
       {/* Track list */}
       {tracks.length === 0 ? (
-        <div style={{ padding: '2rem', backgroundColor: '#282828', borderRadius: '8px', textAlign: 'center' }}>
-          <p style={{ color: '#b3b3b3', margin: 0 }}>
-            No tracks yet — add songs via the + button in the player while a song is playing.
-          </p>
-        </div>
+        <div className={styles.emptyCard}><p style={{ color: '#b3b3b3', margin: 0 }}>No tracks yet — add songs via the + button in the player while a song is playing.</p></div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {/* Column headers */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '40px 1fr 40px',
-            padding: '0 12px 8px',
-            borderBottom: '1px solid #282828',
-          }}>
+        <div className={styles.trackTable}>
+          <div className={styles.tableHeader}>
             <span style={{ fontSize: '0.72rem', color: '#6b6b6b', textAlign: 'center' }}>#</span>
             <span style={{ fontSize: '0.72rem', color: '#6b6b6b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Title</span>
             <span />
@@ -245,67 +203,17 @@ export default function PlaylistPage() {
           {tracks.map((track, idx) => {
             const isActive = currentSong?.id === track.id;
             return (
-              <div
-                key={track.id}
-                onClick={() => setQueue(tracks, idx)}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '40px 1fr 40px',
-                  alignItems: 'center',
-                  padding: '8px 12px',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  backgroundColor: isActive ? 'rgba(29,185,84,0.1)' : 'transparent',
-                  transition: 'background-color 0.15s',
-                  gap: '8px',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.backgroundColor = '#282828';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = isActive ? 'rgba(29,185,84,0.1)' : 'transparent';
-                }}
-              >
-                {/* Index / play indicator */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {isActive ? (
-                    <img
-                      src={isPlaying ? pauseImg : playButtonImg}
-                      alt=""
-                      style={{ width: '14px', height: '14px' }}
-                    />
-                  ) : (
-                    <span style={{ fontSize: '0.8rem', color: '#b3b3b3' }}>{idx + 1}</span>
-                  )}
+              <div key={track.id} onClick={() => setQueue(tracks, idx)} className={styles.trackRow} style={{ backgroundColor: isActive ? 'rgba(29,185,84,0.1)' : 'transparent' }} onMouseEnter={(e) => { if (!isActive) (e.currentTarget as HTMLElement).style.backgroundColor = '#282828'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = isActive ? 'rgba(29,185,84,0.1)' : 'transparent'; }}>
+                <div className={styles.indexCol}>
+                  {isActive ? (<img src={isPlaying ? pauseImg : playButtonImg} alt="" style={{ width: '14px', height: '14px' }} />) : (<span style={{ fontSize: '0.8rem', color: '#b3b3b3' }}>{idx + 1}</span>)}
                 </div>
 
-                {/* Title + artist */}
-                <div style={{ overflow: 'hidden' }}>
-                  <p style={{
-                    margin: 0, fontSize: '0.875rem', fontWeight: 600,
-                    color: isActive ? '#1db954' : '#fff',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
-                    {track.title}
-                  </p>
-                  <p style={{
-                    margin: '2px 0 0', fontSize: '0.75rem', color: '#b3b3b3',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
-                    {track.artist}
-                  </p>
+                <div className={styles.titleCol}>
+                  <p className={styles.trackTitle} style={{ color: isActive ? '#1db954' : '#fff' }}>{track.title}</p>
+                  <p className={styles.trackArtist}>{track.artist}</p>
                 </div>
 
-                {/* 3-dot menu */}
-                {id && (
-                  <TrackMenu
-                    playlistId={id}
-                    trackId={track.id}
-                    trackTitle={track.title}
-                    onRemoved={handleTrackRemoved}
-                    onShare={(tid, title) => setShareTarget({ id: tid, title })}
-                  />
-                )}
+                {id && (<TrackMenu playlistId={id} trackId={track.id} trackTitle={track.title} onRemoved={handleTrackRemoved} onShare={(tid, title) => setShareTarget({ id: tid, title })} />)}
               </div>
             );
           })}
@@ -313,11 +221,7 @@ export default function PlaylistPage() {
       )}
 
       {shareTarget && (
-        <ShareModal
-          mediaItemId={shareTarget.id}
-          title={shareTarget.title}
-          onClose={() => setShareTarget(null)}
-        />
+        <ShareModal mediaItemId={shareTarget.id} title={shareTarget.title} onClose={() => setShareTarget(null)} />
       )}
     </div>
   );

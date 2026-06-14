@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useMusic } from '../hooks/MusicContext';
 import apiService from '../services/ApiService';
 import ShareModal from '../components/ShareModal';
+import styles from './Artist.module.css';
 import type { User, Playlist, FollowStatus } from '../types';
 
 const FALLBACK_AVATAR = (name: string) =>
@@ -77,12 +78,7 @@ export default function UserPage() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: '12px' }}>
         <p style={{ color: '#b3b3b3', fontSize: '1rem' }}>User not found.</p>
-        <button
-          onClick={() => navigate(-1)}
-          style={{ background: 'none', border: '1px solid #535353', color: '#fff', borderRadius: '20px', padding: '8px 20px', cursor: 'pointer', fontSize: '0.875rem' }}
-        >
-          Go back
-        </button>
+        <button onClick={() => navigate(-1)} style={{ background: 'none', border: '1px solid #535353', color: '#fff', borderRadius: '20px', padding: '8px 20px', cursor: 'pointer', fontSize: '0.875rem' }}>Go back</button>
       </div>
     );
   }
@@ -90,146 +86,39 @@ export default function UserPage() {
   const joinYear = profile.createdAt ? new Date(profile.createdAt).getFullYear() : null;
 
   return (
-    <div style={{ maxWidth: '900px' }}>
-      {/* Hero section */}
-      <div style={{
-        background: 'linear-gradient(160deg, #3a3a3a 0%, #1a1a1a 100%)',
-        borderRadius: '12px',
-        padding: '32px 28px',
-        marginBottom: '28px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '28px',
-      }}>
-        {/* Avatar */}
-        <div style={{ flexShrink: 0 }}>
-          <img
-            src={profile.avatarUrl ?? FALLBACK_AVATAR(profile.username)}
-            alt={profile.username}
-            onError={(e) => { e.currentTarget.src = FALLBACK_AVATAR(profile.username); }}
-            style={{
-              width: '120px', height: '120px',
-              borderRadius: '50%',
-              objectFit: 'cover',
-              border: '3px solid #535353',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-            }}
-          />
+    <div className={styles.container}>
+      <div className={styles.hero}>
+        <div className={styles.avatarWrap}>
+          <img src={profile.avatarUrl ?? FALLBACK_AVATAR(profile.username)} alt={profile.username} onError={(e) => { e.currentTarget.src = FALLBACK_AVATAR(profile.username); }} className={styles.avatar} />
         </div>
+        <div className={styles.info}>
+          <p className={styles.meta}>Profile</p>
+          <h1 className={styles.username}>{profile.username}</h1>
+          {profile.bio && (<p className={styles.bio}>{profile.bio}</p>)}
 
-        {/* Info */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: '0 0 4px', fontSize: '0.75rem', color: '#b3b3b3', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-            Profile
-          </p>
-          <h1 style={{ margin: '0 0 8px', fontSize: '2rem', fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>
-            {profile.username}
-          </h1>
-          {profile.bio && (
-            <p style={{ margin: '0 0 14px', fontSize: '0.875rem', color: '#b3b3b3', lineHeight: 1.5, maxWidth: '500px' }}>
-              {profile.bio}
-            </p>
-          )}
-
-          {/* Stats */}
-          <div style={{ display: 'flex', gap: '20px', marginBottom: '18px', flexWrap: 'wrap' }}>
-            <Stat label="Followers" value={status.followerCount} />
-            <Stat label="Following" value={status.followingCount} />
-            <Stat label="Public playlists" value={playlists.length} />
-            {joinYear && <Stat label="Member since" value={joinYear} />}
+          <div className={styles.stats}>
+            <div className={styles.stat}><p className={styles.statValue}>{status.followerCount.toLocaleString()}</p><p className={styles.statLabel}>Followers</p></div>
+            <div className={styles.stat}><p className={styles.statValue}>{status.followingCount.toLocaleString()}</p><p className={styles.statLabel}>Following</p></div>
+            <div className={styles.stat}><p className={styles.statValue}>{playlists.length}</p><p className={styles.statLabel}>Public playlists</p></div>
+            {joinYear && (<div className={styles.stat}><p className={styles.statValue}>{joinYear}</p><p className={styles.statLabel}>Member since</p></div>)}
           </div>
 
-          {/* Follow button — ẩn nếu là profile của chính mình */}
-          {!isOwnProfile && (
-            <button
-              onClick={handleFollow}
-              disabled={followLoading}
-              style={{
-                padding: '9px 28px',
-                borderRadius: '20px',
-                border: status.isFollowing ? '1px solid #535353' : 'none',
-                background: status.isFollowing ? 'transparent' : '#1db954',
-                color: status.isFollowing ? '#fff' : '#000',
-                fontSize: '0.875rem',
-                fontWeight: 700,
-                cursor: followLoading ? 'not-allowed' : 'pointer',
-                transition: 'background 0.15s, transform 0.1s',
-                opacity: followLoading ? 0.7 : 1,
-              }}
-              onMouseEnter={(e) => {
-                if (!followLoading) e.currentTarget.style.transform = 'scale(1.04)';
-              }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-            >
-              {followLoading ? '...' : status.isFollowing ? 'Đang follow' : 'Follow'}
-            </button>
-          )}
+          {!isOwnProfile && (<button onClick={handleFollow} disabled={followLoading} className={styles.followBtn} style={{ border: status.isFollowing ? '1px solid #535353' : 'none', background: status.isFollowing ? 'transparent' : '#1db954', color: status.isFollowing ? '#fff' : '#000', opacity: followLoading ? 0.7 : 1 }} onMouseEnter={(e) => { if (!followLoading) (e.currentTarget as HTMLElement).style.transform = 'scale(1.04)'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}>{followLoading ? '...' : status.isFollowing ? 'Đang follow' : 'Follow'}</button>)}
 
-          {isOwnProfile && (
-            <button
-              onClick={() => navigate('/profile')}
-              style={{
-                padding: '9px 24px',
-                borderRadius: '20px',
-                border: '1px solid #535353',
-                background: 'transparent',
-                color: '#fff',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Chỉnh sửa Profile
-            </button>
-          )}
+          {isOwnProfile && (<button onClick={() => navigate('/profile')} className={styles.editBtn}>Chỉnh sửa Profile</button>)}
         </div>
       </div>
 
-      {/* Public Playlists */}
       {playlists.length > 0 && (
         <section>
-          <h2 style={{ margin: '0 0 16px', fontSize: '1.2rem', fontWeight: 700, color: '#fff' }}>
-            Public Playlists
-          </h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-            gap: '16px',
-          }}>
-            {playlists.map(pl => (
-              <PlaylistCard
-                key={pl.id}
-                playlist={pl}
-                onPlay={() => handlePlayPlaylist(pl)}
-                onShare={() => setSharePlaylist(pl)}
-                onNavigate={() => navigate(`/playlist/${pl.id}`)}
-              />
-            ))}
-          </div>
+          <h2 className={styles.sectionTitle}>Public Playlists</h2>
+          <div className={styles.grid}>{playlists.map(pl => (<PlaylistCard key={pl.id} playlist={pl} onPlay={() => handlePlayPlaylist(pl)} onShare={() => setSharePlaylist(pl)} onNavigate={() => navigate(`/playlist/${pl.id}`)} />))}</div>
         </section>
       )}
 
-      {playlists.length === 0 && !loading && (
-        <div style={{
-          backgroundColor: '#282828',
-          borderRadius: '8px',
-          padding: '32px',
-          textAlign: 'center',
-        }}>
-          <p style={{ margin: 0, color: '#b3b3b3', fontSize: '0.875rem' }}>
-            Người dùng này chưa có playlist công khai nào.
-          </p>
-        </div>
-      )}
+      {playlists.length === 0 && !loading && (<div className={styles.noPlaylists}><p style={{ margin: 0, color: '#b3b3b3', fontSize: '0.875rem' }}>Người dùng này chưa có playlist công khai nào.</p></div>)}
 
-      {/* Share Modal */}
-      {sharePlaylist && (
-        <ShareModal
-          playlistId={sharePlaylist.id}
-          title={sharePlaylist.title}
-          onClose={() => setSharePlaylist(null)}
-        />
-      )}
+      {sharePlaylist && (<ShareModal playlistId={sharePlaylist.id} title={sharePlaylist.title} onClose={() => setSharePlaylist(null)} />)}
     </div>
   );
 }

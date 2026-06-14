@@ -81,14 +81,17 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var seeder = scope.ServiceProvider.GetRequiredService<IDataSeeder>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
         await seeder.SeedAsync();
+        logger.LogInformation("Database seeding completed successfully.");
     }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogWarning(ex, "Database seeding skipped or failed: {Message}", ex.Message);
+        logger.LogError(ex, "❌ Critical: Database initialization failed. The application may not work correctly.\nError: {Message}\n{StackTrace}", 
+            ex.Message, ex.StackTrace);
+        // Don't re-throw - allow app to start but log the error prominently
     }
 }
 

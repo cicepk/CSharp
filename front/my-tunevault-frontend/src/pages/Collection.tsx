@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiService from '../services/ApiService';
+import styles from './Collection.module.css';
 import { useMusic } from '../hooks/MusicContext';
 import type { Song } from '../types';
 
@@ -43,66 +44,44 @@ export default function CollectionPage() {
     };
   }, [id, collections]);
 
-  if (!id) return <div className="p-6 text-white">Collection id missing</div>;
+  if (!id) return <div className={styles.container}>Collection id missing</div>;
 
-  if (!collection)
-    return (
-      <div className="p-6 text-white">
-        <h2 className="text-2xl font-bold">Collection not found</h2>
-        <p className="text-gray-400 mt-2">This collection doesn't exist or was removed.</p>
-        <button onClick={() => navigate('/library')} className="mt-4 px-4 py-2 bg-green-500 rounded-md">
-          Back to library
-        </button>
-      </div>
-    );
+  if (!collection) return (
+    <div className={styles.container}>
+      <h2 className={styles.title}>Collection not found</h2>
+      <p className={styles.loading}>This collection doesn't exist or was removed.</p>
+      <button onClick={() => navigate('/library')} style={{ marginTop: '1rem', padding: '0.5rem 1rem', borderRadius: 6 }}>Back to library</button>
+    </div>
+  );
 
   return (
-    <div className="p-6">
-      <h2 className="text-3xl font-bold text-white mb-4">{collection.name}</h2>
+    <div className={styles.container}>
+      <h2 className={styles.title}>{collection.name}</h2>
 
       {isLoading ? (
-        <p className="text-gray-400">Loading...</p>
+        <p className={styles.loading}>Loading...</p>
       ) : (
-        <div className="grid gap-5">
+        <div className={styles.grid}>
           {songs.length === 0 ? (
-            <div className="text-gray-400">No songs in this collection yet.</div>
+            <div className={styles.loading}>No songs in this collection yet.</div>
           ) : (
             songs.map((song, idx) => (
-              <div
-                key={song.id}
-                onClick={() => setQueue(songs, idx)}
-                className="flex items-center justify-between p-3 bg-[#1e1e1e] hover:bg-green-700 hover:scale-105 rounded-md transition-all duration-200 cursor-pointer min-h-[64px] gap-4 group origin-left"
-              >
-                <div className="flex items-center gap-4 flex-1">
+              <div key={song.id} onClick={() => setQueue(songs, idx)} className={styles.card}>
+                <div className={styles.left}>
                   {song.cover ? (
-                    <img
-                      src={song.cover}
-                      alt={song.title}
-                      className="w-14 h-14 object-cover rounded-md group-hover:brightness-75 transition-all duration-200"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
+                    <img src={song.cover} alt={song.title} className={styles.cover} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                   ) : (
-                    <div className="w-14 h-14 bg-[#1e1e1e] rounded-md flex items-center justify-center text-gray-500 group-hover:bg-[#2a2a2a] transition-all duration-200"></div>
+                    <div className={styles.coverPlaceholder}></div>
                   )}
 
-                  <div className="song-info flex-1 flex flex-col gap-1 min-w-0">
-                    <div className="font-bold text-white truncate group-hover:text-green-400 transition-colors duration-200">{song.title}</div>
-                    <div className="text-gray-400 text-sm truncate group-hover:text-gray-300 transition-colors duration-200">{song.artist}</div>
+                  <div className={styles.songInfo}>
+                    <div className={styles.songTitle}>{song.title}</div>
+                    <div className={styles.songArtist}>{song.artist}</div>
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeSongFromCollection(collection.id, song.id);
-                    }}
-                    className="bg-transparent border border-gray-700 px-2 py-1 rounded-md text-gray-400 hover:bg-gray-700 hover:text-white transition min-w-max mx-auto my-auto"
-                  >
-                    Remove
-                  </button>
+                <div>
+                  <button onClick={(e) => { e.stopPropagation(); removeSongFromCollection(collection.id, song.id); }} className={styles.removeBtn}>Remove</button>
                 </div>
               </div>
             ))

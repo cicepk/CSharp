@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMusic } from '../hooks/MusicContext';
 import apiService from '../services/ApiService';
 import ShareModal from '../components/ShareModal';
+import styles from './Search.module.css';
 import type { Song, UserSearchResult } from '../types';
 import playButtonImg from '../assets/icons/play-button.png';
 
@@ -138,65 +139,38 @@ export default function Search() {
 
   return (
     <>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '2rem' }}>
+      <div className={styles.container}>
         {/* Search bar */}
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem' }}>
+        <form onSubmit={handleSearch} className={styles.searchForm}>
           <input
+            className={styles.searchInput}
             type="text"
             value={query}
             onChange={(e) => handleInput(e.target.value)}
             placeholder="Tìm bài hát, nghệ sĩ, người dùng..."
-            style={{
-              flex: 1, padding: '0.75rem 1.2rem',
-              backgroundColor: '#282828', color: '#fff',
-              border: 'none', borderRadius: '9999px',
-              fontSize: '1rem', outline: 'none',
-              transition: 'box-shadow 0.2s',
-            }}
             onFocus={(e) => { e.currentTarget.style.boxShadow = '0 0 0 2px #1db954'; }}
             onBlur={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
           />
-          <button
-            type="submit"
-            style={{
-              backgroundColor: '#1db954', color: '#000',
-              padding: '0.75rem 1.5rem', border: 'none',
-              borderRadius: '9999px', fontWeight: 'bold', cursor: 'pointer',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#1ed760'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#1db954'; }}
-          >
-            Search
-          </button>
+          <button type="submit" className={styles.searchBtn} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#1ed760'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#1db954'; }}>Search</button>
         </form>
 
-        {!hasSearched && (
-          <p style={{ color: '#b3b3b3' }}>Tìm kiếm bài hát hoặc người dùng</p>
-        )}
-        {isLoading && <p style={{ color: '#b3b3b3' }}>Đang tìm kiếm...</p>}
-        {hasSearched && !isLoading && !hasResults && (
-          <p style={{ color: '#b3b3b3' }}>Không tìm thấy kết quả nào</p>
-        )}
+        {!hasSearched && (<p className={styles.message}>Tìm kiếm bài hát hoặc người dùng</p>)}
+        {isLoading && <p className={styles.message}>Đang tìm kiếm...</p>}
+        {hasSearched && !isLoading && !hasResults && (<p className={styles.message}>Không tìm thấy kết quả nào</p>)}
 
         {/* Users section */}
         {users.length > 0 && (
           <section>
-            <h2 style={{ margin: '0 0 12px', fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>
-              Người dùng
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {users.map(u => <UserCard key={u.id} user={u} />)}
-            </div>
+            <h2 className={styles.sectionTitle}>Người dùng</h2>
+            <div className={styles.userList}>{users.map(u => <UserCard key={u.id} user={u} />)}</div>
           </section>
         )}
 
         {/* Songs section */}
         {songs.length > 0 && (
           <section>
-            <h2 style={{ margin: '0 0 12px', fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>
-              Bài hát
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1.2rem' }}>
+            <h2 className={styles.sectionTitle}>Bài hát</h2>
+            <div className={styles.grid}>
               {songs.map((song, idx) => {
                 const isActive = currentSong?.id === song.id;
                 return (
@@ -238,10 +212,8 @@ function SongCard({ song, isActive, isPlaying, onPlay, onShare }: {
   return (
     <div
       onClick={onPlay}
+      className={styles.cardWrapper}
       style={{
-        cursor: 'pointer', borderRadius: '8px',
-        overflow: 'hidden', position: 'relative',
-        transition: 'transform 0.2s',
         transform: isActive ? 'scale(1.05)' : hovered ? 'scale(1.04)' : 'scale(1)',
         boxShadow: isActive ? '0 0 16px rgba(29,185,84,0.5)' : 'none',
       }}
@@ -251,7 +223,7 @@ function SongCard({ song, isActive, isPlaying, onPlay, onShare }: {
       <img
         src={song.cover || FALLBACK_COVER}
         alt={song.title}
-        style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }}
+        className={styles.cardImg}
         onError={(e) => { e.currentTarget.src = FALLBACK_COVER; }}
       />
 
@@ -287,13 +259,9 @@ function SongCard({ song, isActive, isPlaying, onPlay, onShare }: {
         </button>
       </div>
 
-      <div style={{ padding: '8px 10px 10px', backgroundColor: '#282828' }}>
-        <p style={{ fontWeight: 700, fontSize: '0.8rem', margin: '0 0 2px', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {song.title}
-        </p>
-        <p style={{ fontSize: '0.72rem', margin: 0, color: '#b3b3b3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {song.artist}
-        </p>
+      <div className={styles.cardInfo}>
+        <p className={styles.cardTitle}>{song.title}</p>
+        <p className={styles.cardSub}>{song.artist}</p>
       </div>
     </div>
   );
