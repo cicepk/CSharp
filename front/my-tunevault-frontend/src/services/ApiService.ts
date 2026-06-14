@@ -34,6 +34,13 @@ interface RawPlaylist {
   createdAt?: string;
 }
 
+interface FavouriteDto {
+  mediaItemId: string;
+  title: string;
+  artist: string;
+  addedAt: string;
+}
+
 // --- Helpers ---
 
 function toSong(item: RawMediaItem): Song {
@@ -156,6 +163,22 @@ class ApiService {
     const res = await this.fetch<ApiResponse<RawPlaylist>>(`/playlist/${id}`);
     if (!res.success || !res.data) throw new Error(res.error ?? 'Playlist not found');
     return toPlaylist(res.data);
+  }
+
+  // Favourites
+  async getFavourites(): Promise<string[]> {
+    const res = await this.fetch<ApiResponse<FavouriteDto[]>>('/favourite');
+    if (!res.success || !res.data) return [];
+    return res.data.map((f) => f.mediaItemId);
+  }
+
+  async toggleFavourite(mediaItemId: string): Promise<boolean> {
+    const res = await this.fetch<ApiResponse<{ isFavourite: boolean }>>('/favourite/toggle', {
+      method: 'POST',
+      body: JSON.stringify({ mediaItemId }),
+    });
+    if (!res.success || !res.data) throw new Error(res.error ?? 'Toggle favourite failed');
+    return res.data.isFavourite;
   }
 }
 

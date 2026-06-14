@@ -2,9 +2,10 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
 import Search from './pages/Search';
-import Library from './pages/Library';
-import Playlist from './pages/Playlist';
+import Library from './pages/Library.tsx';
+import Playlist from './pages/Playlist.tsx';
 import Artist from './pages/Artist';
+import CollectionPage from './pages/Collection.tsx';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -29,6 +30,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/search" element={<Search />} />
               <Route path="/library" element={<Library />} />
+              <Route path="/collection/:id" element={<CollectionPage />} />
               <Route path="/playlist/:id" element={<Playlist />} />
               <Route path="/artist/:id" element={<Artist />} />
             </Route>

@@ -299,3 +299,34 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
   border: none;
 }
+
+/* Collection card styling (semi-transparent clickable cards) */
+.collection-card {
+  background-color: rgba(40, 40, 40, 0.6);
+  transition: box-shadow 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+.collection-card:hover {
+  background-color: rgba(40, 40, 40, 0.85);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  transform: translateY(-2px);
+}
+
+/* small helper for medium radius used in components */
+.rounded-md {
+  border-radius: 0.375rem;
+}
+
+/* translucent song info box for title + artist */
+.song-info {
+  background-color: rgba(255,255,255,0.04);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  min-width: 0; /* allow truncation when inside flex */
+  overflow: hidden;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
