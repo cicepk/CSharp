@@ -15,23 +15,15 @@ export default function SongDetails() {
 
   return (
     <div className={styles.container}>
-      {/* Album Cover */}
-      <div style={{
-        <div className={styles.coverBox} style={{ backgroundImage: currentSong.cover ? `url(${currentSong.cover})` : 'none' }}>
-          {!currentSong.cover && '🎵'}
-        </div>
+      <div
+        className={styles.coverBox}
+        style={{ backgroundImage: currentSong.cover ? `url(${currentSong.cover})` : undefined }}
+      >
+        {!currentSong.cover && '🎵'}
+      </div>
 
-      {/* Song Title */}
-      <h2 className={styles.title}>
-        {currentSong.title}
-      </h2>
-
-      {/* Artist */}
-      <p className={styles.artist}>
-        {currentSong.artist}
-      </p>
-
-      {/* Song Info removed */}
+      <h2 className={styles.title}>{currentSong.title}</h2>
+      <p className={styles.artist}>{currentSong.artist}</p>
     </div>
   );
 }

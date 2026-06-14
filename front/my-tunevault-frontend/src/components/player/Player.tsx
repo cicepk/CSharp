@@ -35,10 +35,38 @@ export default function Player() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [addMsg, setAddMsg] = useState('');
   const addMenuRef = useRef<HTMLDivElement>(null);
+  const [isFav, setIsFav] = useState(false);
+  const [favPlaylistId, setFavPlaylistId] = useState<string | null>(null);
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume / 100;
   }, [volume, audioRef]);
+
+  // sync favourite state and detect favourite playlist
+  useEffect(() => {
+    let mounted = true;
+    if (!currentSong) {
+      setIsFav(false);
+      return () => { mounted = false; };
+    }
+
+    (async () => {
+      try {
+        const favs = await apiService.getFavourites().catch(() => [] as string[]);
+        if (!mounted) return;
+        setIsFav(Boolean(currentSong && favs.includes(currentSong.id)));
+      } catch { /* silent */ }
+
+      try {
+        const pls = await apiService.getPlaylists().catch(() => [] as Playlist[]);
+        if (!mounted) return;
+        const found = pls.find(p => /favorite(s)?/i.test(p.title));
+        if (found) setFavPlaylistId(found.id);
+      } catch { /* silent */ }
+    })();
+
+    return () => { mounted = false; };
+  }, [currentSong?.id]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -70,6 +98,44 @@ export default function Player() {
       setAddMsg('Already in playlist');
       setTimeout(() => setAddMsg(''), 1500);
     }
+  };
+
+  const handleToggleFavourite = async () => {
+    if (!currentSong) return;
+    const prev = isFav;
+    setIsFav(!prev);
+
+    // toggle central favourite flag
+    let newVal = prev;
+    try {
+      newVal = await apiService.toggleFavourite(currentSong.id);
+      setIsFav(newVal);
+    } catch {
+      setIsFav(prev);
+      return;
+    }
+
+    // ensure favourite playlist exists and add/remove track
+    try {
+      let playlistId = favPlaylistId;
+      if (!playlistId) {
+        const pls = await apiService.getPlaylists().catch(() => [] as Playlist[]);
+        const found = pls.find(p => /favorite(s)?/i.test(p.title));
+        if (found) playlistId = found.id;
+        else {
+          const created = await apiService.createPlaylist('Favorite').catch(() => null);
+          if (created) playlistId = created.id;
+        }
+        if (playlistId) setFavPlaylistId(playlistId);
+      }
+
+      if (!playlistId) return;
+      if (newVal) {
+        await apiService.addTrackToPlaylist(playlistId, currentSong.id).catch(() => {});
+      } else {
+        await apiService.removeTrackFromPlaylist(playlistId, currentSong.id).catch(() => {});
+      }
+    } catch { /* silent */ }
   };
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -218,6 +284,24 @@ export default function Player() {
                 width: '4px', height: '4px', borderRadius: '50%',
                 backgroundColor: '#1db954',
               }} />
+            )}
+          </button>
+
+          {/* Favorite */}
+          <button
+            onClick={handleToggleFavourite}
+            title={isFav ? 'Unfavorite' : 'Favorite'}
+            className={styles.iconControl}
+            style={{ color: isFav ? '#e0245e' : undefined, marginLeft: '6px' }}
+          >
+            {isFav ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#e0245e" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 21s-7.333-4.534-9.333-7.192C.667 11.587 2.04 6.5 6.2 5.02 8.01 4.346 9.91 5.04 12 7.02c2.09-1.98 3.99-2.674 5.8-1.999C21.96 6.5 23.333 11.587 21.333 13.808 19.333 16.466 12 21 12 21z" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" color="#b3b3b3">
+                <path d="M20.8 13.8C18.8 16.5 12 21 12 21s-6.8-4.5-8.8-7.2C1.2 11.6 2.6 6.5 6.8 5.1 8.6 4.5 10.5 5.2 12 7c1.5-1.8 3.4-2.5 5.2-1.9 4.2 1.4 5.6 6.5 3.6 8.7z" />
+              </svg>
             )}
           </button>
         </div>

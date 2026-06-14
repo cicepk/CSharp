@@ -33,10 +33,30 @@ export default function Library() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    apiService.getPlaylists()
-      .then(setPlaylists)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load playlists'))
-      .finally(() => setIsLoading(false));
+    let mounted = true;
+    (async () => {
+      try {
+        const pls = await apiService.getPlaylists();
+        if (!mounted) return;
+        setPlaylists(pls);
+
+        const hasFav = pls.some(p => /favorite(s)?/i.test(p.title));
+        if (!hasFav) {
+          try {
+            const newPl = await apiService.createPlaylist('Favorite');
+            if (!mounted) return;
+            setPlaylists(prev => [newPl, ...prev]);
+          } catch { /* silent */ }
+        }
+      } catch (err) {
+        if (!mounted) return;
+        setError(err instanceof Error ? err.message : 'Failed to load playlists');
+      } finally {
+        if (!mounted) return;
+        setIsLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
