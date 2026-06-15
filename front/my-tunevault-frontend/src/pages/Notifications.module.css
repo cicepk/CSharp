@@ -1,0 +1,152 @@
+.page {
+  padding: 32px 40px;
+  max-width: 720px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: #1db954;
+  color: #000;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.markAllBtn {
+  background: none;
+  border: 1px solid #3e3e3e;
+  border-radius: 20px;
+  color: #1db954;
+  font-size: 0.8rem;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.markAllBtn:hover {
+  background: #1a1a1a;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.item:hover {
+  background: #1a1a1a;
+}
+
+.unread {
+  background: #181818;
+}
+
+.dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.message {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #fff;
+  line-height: 1.45;
+}
+
+.item:not(.unread) .message {
+  color: #b3b3b3;
+}
+
+.meta {
+  margin: 4px 0 0;
+  font-size: 0.72rem;
+  color: #6a6a6a;
+}
+
+.deleteBtn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #6a6a6a;
+  font-size: 0.8rem;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.item:hover .deleteBtn {
+  opacity: 1;
+}
+
+.deleteBtn:hover {
+  color: #ff6b6b;
+}
+
+.empty {
+  margin: 0;
+  padding: 20px 0;
+  font-size: 0.875rem;
+  color: #b3b3b3;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 0;
+  gap: 12px;
+}
+
+.emptyIcon {
+  font-size: 2.5rem;
+}
+
+.emptyText {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #b3b3b3;
+}

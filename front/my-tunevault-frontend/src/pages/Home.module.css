@@ -1,0 +1,91 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  padding: 2rem;
+}
+
+.section {}
+
+.heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #fff;
+}
+
+.trackGrid {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.trackCard {
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  flex: 1;
+  min-width: 140px;
+  max-width: 220px;
+  background: transparent;
+}
+
+.trackImg {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+.cardInfo {
+  padding: 0.75rem 1rem;
+  background-color: #282828;
+}
+
+.titleText {
+  font-weight: 700;
+  font-size: 0.875rem;
+  margin: 0.25rem 0;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subText {
+  font-size: 0.75rem;
+  margin: 0;
+  color: #b3b3b3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hoverOverlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background-color: rgba(0,0,0,0.6);
+  transition: opacity 0.2s;
+}
+
+.shareBtn {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.35);
+  color: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700;
+}
+
+.loadingMsg, .errorMsg, .emptyMsg {
+  color: #b3b3b3; padding: 2rem;
+}
+
+.errorMsg { color: #dc2626; }

@@ -1,0 +1,219 @@
+.playerContainer {
+  display: grid;
+  grid-template-columns: 280px 1fr 280px;
+  align-items: center;
+  height: 100%;
+  padding: 0 1rem;
+  background-color: #181818;
+  border-top: 1px solid #282828;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.trackImage {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.trackInfo {
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artist {
+  margin: 2px 0 0 0;
+  font-size: 0.75rem;
+  color: #b3b3b3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addButtonWrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.iconButton {
+  background: none;
+  border: 1px solid #535353;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: border-color 0.2s;
+}
+
+.iconButton:hover { border-color: #fff; }
+
+.addMenu {
+  position: absolute;
+  bottom: 34px;
+  left: 0;
+  background-color: #282828;
+  border-radius: 6px;
+  min-width: 180px;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+
+.addMenuHeader {
+  margin: 0;
+  padding: 10px 14px 6px;
+  font-size: 0.7rem;
+  color: #b3b3b3;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.addMenuItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.controlsRow {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.iconControl {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  transition: opacity 0.2s;
+}
+
+.prevNext {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.2s;
+}
+
+.playButton {
+  background-color: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: transform 0.1s;
+  flex-shrink: 0;
+}
+
+.progressWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.time {
+  font-size: 0.68rem;
+  color: #b3b3b3;
+  min-width: 36px;
+  text-align: right;
+}
+
+.progressBar {
+  flex: 1;
+  height: 4px;
+  background-color: #535353;
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: #b3b3b3;
+  border-radius: 2px;
+  pointer-events: none;
+  transition: background-color 0.2s, width 0.2s linear;
+}
+
+.progressBar:hover .progressFill { background-color: #1db954; }
+
+.right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.volumeContainer {
+  position: relative;
+  width: 90px;
+  height: 4px;
+  background-color: #535353;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.volumeFill {
+  height: 100%;
+  background-color: #fff;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.iconImg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+}
+
+.smallIcon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+}

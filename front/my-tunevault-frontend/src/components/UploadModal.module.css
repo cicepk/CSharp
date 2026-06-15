@@ -1,0 +1,104 @@
+.overlay {
+  position: fixed; inset: 0;
+  background-color: rgba(0,0,0,0.75);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 400;
+}
+
+.modal {
+  background-color: #242424;
+  border-radius: 12px;
+  width: 520px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.8);
+}
+
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #3e3e3e;
+}
+
+.title { margin: 0; font-size: 1.1rem; font-weight: 700; color: #fff; }
+
+.closeBtn {
+  background: none; border: none; cursor: pointer;
+  color: #b3b3b3; font-size: 1.2rem; line-height: 1;
+  padding: 2px 6px; border-radius: 4px;
+}
+.closeBtn:hover { color: #fff; background: #3e3e3e; }
+
+.form { padding: 1.5rem; }
+
+.dropzone {
+  border: 2px dashed #535353;
+  border-radius: 10px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  background-color: transparent;
+  transition: all 0.15s;
+  margin-bottom: 1.25rem;
+}
+.dropzone.dragOver { border-color: #1db954; background-color: rgba(29,185,84,0.06); }
+
+.fileInfo {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; background-color: #2a2a2a;
+  border-radius: 8px; margin-bottom: 1.25rem; border: 1px solid #3e3e3e;
+}
+
+.fileIcon { font-size: 1.5rem; flex-shrink: 0; }
+
+.fileMeta { flex: 1; min-width: 0; }
+.fileName { margin: 0; font-size: 0.85rem; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fileSub { margin: 2px 0 0; font-size: 0.75rem; color: #b3b3b3; }
+
+.removeBtn { background: none; border: none; color: #b3b3b3; cursor: pointer; font-size: 1rem; flex-shrink: 0; }
+.removeBtn:hover { color: #fff; }
+
+.coverArea { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+.coverBox {
+  width: 140px; height: 140px; border-radius: 10px; cursor: pointer; overflow: hidden;
+  display: flex; align-items: center; justify-content: center; position: relative;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  border: 2px dashed #535353; background-color: #2a2a2a;
+}
+.coverBox.hasPreview { border-color: transparent; background-color: transparent; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+
+.coverImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.coverOverlay {
+  position: absolute; inset: 0; background-color: rgba(0,0,0,0.55);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  opacity: 0; transition: opacity 0.18s; border-radius: 8px;
+}
+.coverBox:hover .coverOverlay { opacity: 1; }
+
+.coverRemove {
+  position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%;
+  background-color: rgba(0,0,0,0.7); border: none; cursor: pointer; color: #fff; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; z-index: 1;
+}
+
+.inputField { padding: 10px 12px; background-color: #3e3e3e; border: 1px solid #535353; border-radius: 6px; color: #fff; font-size: 0.875rem; outline: none; width: 100%; box-sizing: border-box; }
+.inputField.disabled { color: #b3b3b3; opacity: 0.6; }
+
+.metaGroup { display: flex; flex-direction: column; gap: 1.1rem; }
+
+.mediaTypeGroup { display: flex; gap: 8px; }
+.mediaTypeBtn { padding: 6px 16px; border-radius: 20px; border: 1px solid #535353; background: transparent; color: #b3b3b3; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.mediaTypeBtn.active { border-color: #1db954; background-color: rgba(29,185,84,0.15); color: #1db954; }
+
+.errorMsg { margin: 0; font-size: 0.8rem; color: #e53e3e; }
+
+.progressTrack { height: 4px; border-radius: 2px; background-color: #3e3e3e; overflow: hidden; margin-bottom: 6px; }
+.progressFill { height: 100%; background-color: #1db954; transition: width 0.2s; border-radius: 2px; }
+
+.buttonsRow { display: flex; gap: 10px; justify-content: flex-end; margin-top: 0.25rem; }
+.btn { padding: 10px 20px; border-radius: 20px; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+.btn.cancel { border: 1px solid #535353; background: transparent; color: #fff; }
+.btn.submit { border: none; background-color: #1db954; color: #000; padding: 10px 28px; font-weight: 700; }
+.btn.submit:hover { background-color: #1ed760; transform: scale(1.03); }
