@@ -46,6 +46,19 @@ public class MediaItemsController : ControllerBase
         return Ok(ApiResponse<List<MediaDto>>.SuccessResponse(result));
     }
 
+    // GET /api/mediaitems/my-uploads
+    [HttpGet("my-uploads")]
+    [Authorize]
+    public async Task<IActionResult> GetMyUploads(CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetMyUploadsQuery
+        {
+            CurrentUserId = GetCurrentUserId(),
+            BaseUrl       = BaseUrl
+        }, ct);
+        return Ok(ApiResponse<List<MediaDto>>.SuccessResponse(result));
+    }
+
     // GET /api/mediaitems/{id}
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)

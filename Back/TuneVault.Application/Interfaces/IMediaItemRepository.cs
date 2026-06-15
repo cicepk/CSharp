@@ -8,6 +8,8 @@ public interface IMediaItemRepository
 
     Task<MediaItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<MediaItem>> GetByOwnerIdAsync(Guid ownerId, CancellationToken cancellationToken = default);
+
     Task AddAsync(MediaItem mediaItem, CancellationToken cancellationToken = default);
 
     // Tra ve true neu co ban ghi bi cap nhat, false neu khong tim thay Id.

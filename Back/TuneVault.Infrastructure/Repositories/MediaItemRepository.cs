@@ -43,6 +43,22 @@ public class MediaItemRepository : IMediaItemRepository
         }
     }
 
+    public async Task<IReadOnlyList<MediaItem>> GetByOwnerIdAsync(Guid ownerId, CancellationToken cancellationToken = default)
+    {
+        const string sql = @"
+            SELECT Id, Title, Artist, FilePath, CoverPath, MediaType, DurationSeconds, CreatedAt, OwnerId
+            FROM MediaItems
+            WHERE OwnerId = @OwnerId
+            ORDER BY CreatedAt DESC";
+
+        using (var connection = _connectionFactory.CreateConnection())
+        {
+            var command = new CommandDefinition(sql, new { OwnerId = ownerId }, cancellationToken: cancellationToken);
+            var items = await connection.QueryAsync<MediaItem>(command);
+            return items.ToList();
+        }
+    }
+
     public async Task AddAsync(MediaItem mediaItem, CancellationToken cancellationToken = default)
     {
         const string sql = @"
@@ -87,21 +103,35 @@ public class MediaItemRepository : IMediaItemRepository
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        const string sql = "DELETE FROM MediaItems WHERE Id = @Id";
-
         using (var connection = _connectionFactory.CreateConnection())
         {
-            var parameters = new { Id = id };
-            var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
-            var affectedRows = await connection.ExecuteAsync(command);
+            connection.Open();
+            using var tx = connection.BeginTransaction();
+            try
+            {
+                var p = new { Id = id };
 
-            if (affectedRows > 0)
-            {
-                return true;
+                // Xóa child records trước (FK không có CASCADE)
+                await connection.ExecuteAsync(new CommandDefinition(
+                    "DELETE FROM PlayHistory   WHERE MediaItemId = @Id", p, tx, cancellationToken: cancellationToken));
+                await connection.ExecuteAsync(new CommandDefinition(
+                    "DELETE FROM PlaylistItems WHERE MediaItemId = @Id", p, tx, cancellationToken: cancellationToken));
+                await connection.ExecuteAsync(new CommandDefinition(
+                    "DELETE FROM Favourites    WHERE MediaItemId = @Id", p, tx, cancellationToken: cancellationToken));
+                await connection.ExecuteAsync(new CommandDefinition(
+                    "DELETE FROM MediaShares   WHERE MediaItemId = @Id", p, tx, cancellationToken: cancellationToken));
+                // MediaGenres: FK_MediaGenres_MediaItems_MediaItemId ON DELETE CASCADE — xử lý tự động
+
+                var affectedRows = await connection.ExecuteAsync(new CommandDefinition(
+                    "DELETE FROM MediaItems WHERE Id = @Id", p, tx, cancellationToken: cancellationToken));
+
+                tx.Commit();
+                return affectedRows > 0;
             }
-            else
+            catch
             {
-                return false;
+                tx.Rollback();
+                throw;
             }
         }
     }
