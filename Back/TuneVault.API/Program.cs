@@ -1,6 +1,8 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using TuneVault.API.Filters;
 using TuneVault.API.Hubs;
 using TuneVault.API.Middlewares;
 using TuneVault.API.Services;
@@ -58,7 +60,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// --- CORS (AllowCredentials bắt buộc cho SignalR) ---
 var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"] ?? "http://localhost:5173";
 builder.Services.AddCors(options =>
 {
@@ -74,6 +75,20 @@ builder.Services.AddCors(options =>
 // --- Controllers & Swagger ---
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "TuneVault API", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Nhập JWT token theo định dạng: Bearer {token}"
+    });
+    c.DocumentFilter<AuthorizeOperationFilter>();
+});
 
 var app = builder.Build();
 
@@ -91,12 +106,15 @@ using (var scope = app.Services.CreateScope())
     {
         logger.LogError(ex, "❌ Critical: Database initialization failed. The application may not work correctly.\nError: {Message}\n{StackTrace}", 
             ex.Message, ex.StackTrace);
-        // Don't re-throw - allow app to start but log the error prominently
     }
 }
 
 if (app.Environment.IsDevelopment())
+{
     app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "TuneVault API v1"));
+}
 
 if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
