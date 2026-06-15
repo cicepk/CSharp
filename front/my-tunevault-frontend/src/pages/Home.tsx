@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useMusic } from '../hooks/MusicContext';
-import apiService from '../services/ApiService';
 import type { Song } from '../types';
 import ShareModal from '../components/ShareModal';
 import styles from './Home.module.css';
@@ -63,20 +62,10 @@ function TrackCard({ song, index, songs, onShare }: {
 }
 
 export default function Home() {
-  const [songs, setSongs] = useState<Song[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { songs, songsLoading } = useMusic();
   const [shareTarget, setShareTarget] = useState<Song | null>(null);
 
-  useEffect(() => {
-    apiService.getSongs()
-      .then(setSongs)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load'))
-      .finally(() => setIsLoading(false));
-  }, []);
-
-  if (isLoading) return <p style={{ color: '#b3b3b3', padding: '2rem' }}>Loading music...</p>;
-  if (error) return <p style={{ color: '#dc2626', padding: '2rem' }}>Error: {error}</p>;
+  if (songsLoading) return <p style={{ color: '#b3b3b3', padding: '2rem' }}>Loading music...</p>;
   if (songs.length === 0) return <p style={{ color: '#b3b3b3', padding: '2rem' }}>No music available</p>;
 
   const firstHalf = songs.slice(0, Math.ceil(songs.length / 2));

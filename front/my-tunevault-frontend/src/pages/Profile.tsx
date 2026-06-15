@@ -1,18 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useMusic } from '../hooks/MusicContext';
 import apiService from '../services/ApiService';
 import styles from './Profile.module.css';
-import type { Playlist } from '../types';
+import type { Playlist, MediaItem } from '../types';
 
 const FALLBACK_COVER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="160" height="160"%3E%3Crect fill="%23282828" width="160" height="160"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23535353" font-size="48"%3E%F0%9F%8E%B5%3C/text%3E%3C/svg%3E';
 
 export default function Profile() {
   const { user, refreshUser, setUser } = useAuth();
+  const { removeSongById } = useMusic();
   const navigate = useNavigate();
 
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loadingPlaylists, setLoadingPlaylists] = useState(true);
+
+  const [myUploads, setMyUploads] = useState<MediaItem[]>([]);
+  const [loadingUploads, setLoadingUploads] = useState(true);
 
   // Edit mode
   const [editing, setEditing] = useState(false);
@@ -31,6 +36,11 @@ export default function Profile() {
       .then(setPlaylists)
       .catch(() => {})
       .finally(() => setLoadingPlaylists(false));
+
+    apiService.getMyUploads()
+      .then(setMyUploads)
+      .catch(() => {})
+      .finally(() => setLoadingUploads(false));
   }, []);
 
   const openEdit = () => {
@@ -86,6 +96,23 @@ export default function Profile() {
       await apiService.togglePlaylistVisibility(playlist.id, newVal);
       setPlaylists(prev => prev.map(p => p.id === playlist.id ? { ...p, isPublic: newVal } : p));
     } catch { /* silent */ }
+  };
+
+  const handleDeleteMedia = async (media: MediaItem) => {
+    if (!window.confirm(`Xóa "${media.title}"? Hành động này không thể hoàn tác.`)) return;
+    try {
+      await apiService.deleteMedia(media.id);
+      setMyUploads(prev => prev.filter(m => m.id !== media.id));
+      removeSongById(media.id);
+    } catch (err) {
+      alert(`Xóa thất bại: ${err instanceof Error ? err.message : 'Lỗi không xác định'}`);
+    }
+  };
+
+  const formatDuration = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   const publicCount = playlists.filter(p => p.isPublic).length;
@@ -163,6 +190,81 @@ export default function Profile() {
               <div className={styles.cardBody}><p className={styles.cardTitle}>{playlist.title}</p><div className={styles.cardRow}><p style={{ fontSize: '0.75rem', margin: 0, color: '#b3b3b3' }}>{playlist.trackCount ?? 0} tracks</p><button onClick={(e) => handleToggleVisibility(playlist, e)} title={playlist.isPublic ? 'Make private' : 'Make public'} className={styles.toggleBtn} style={{ backgroundColor: playlist.isPublic ? 'rgba(29,185,84,0.2)' : 'rgba(255,255,255,0.1)', color: playlist.isPublic ? '#1db954' : '#b3b3b3' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '0.7'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}>{playlist.isPublic ? 'Public' : 'Private'}</button></div></div>
             </div>
           ))}</div>
+        )}
+      </div>
+
+      <div className={styles.playlistsSection}>
+        <h2 className={styles.playlistTitle}>Bài hát đã tải lên</h2>
+        {loadingUploads ? (
+          <p style={{ color: '#b3b3b3' }}>Loading...</p>
+        ) : myUploads.length === 0 ? (
+          <p style={{ color: '#b3b3b3' }}>Chưa có bài hát nào được tải lên.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {myUploads.map((media, idx) => (
+              <div
+                key={media.id}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '32px 40px 1fr 1fr 80px 60px 40px',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '8px 12px',
+                  borderRadius: '4px',
+                  color: '#b3b3b3',
+                  fontSize: '0.875rem',
+                  backgroundColor: 'transparent',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2a2a2a')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <span style={{ color: '#b3b3b3', textAlign: 'right', fontSize: '0.8rem' }}>{idx + 1}</span>
+                <img
+                  src={media.coverPath || FALLBACK_COVER}
+                  alt={media.title}
+                  style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 2 }}
+                  onError={(e) => { e.currentTarget.src = FALLBACK_COVER; }}
+                />
+                <span style={{ color: '#fff', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{media.title}</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{media.artist}</span>
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  backgroundColor: media.mediaType === 1 ? 'rgba(29,185,84,0.15)' : 'rgba(99,102,241,0.15)',
+                  color: media.mediaType === 1 ? '#1db954' : '#818cf8',
+                  textAlign: 'center',
+                }}>
+                  {media.mediaType === 1 ? 'Audio' : 'Video'}
+                </span>
+                <span style={{ textAlign: 'right' }}>{formatDuration(media.durationSeconds)}</span>
+                <button
+                  onClick={() => handleDeleteMedia(media)}
+                  title="Xóa bài hát"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    borderRadius: '4px',
+                    color: '#b3b3b3',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'color 0.15s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#e53e3e')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#b3b3b3')}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 3v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9zm0 5h2v9H9V8zm4 0h2v9h-2V8z"/>
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

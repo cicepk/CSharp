@@ -29,6 +29,10 @@ interface MusicContextType {
   createCollection: (name: string, songIds?: string[]) => void;
   addSongToCollection: (collectionId: string, songId: string) => void;
   removeSongFromCollection: (collectionId: string, songId: string) => void;
+  // Global songs list (shared between Home and Profile)
+  songs: Song[];
+  songsLoading: boolean;
+  removeSongById: (id: string) => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
@@ -58,6 +62,21 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   });
 
   const { isAuthenticated } = useAuth();
+
+  // Global songs list
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [songsLoading, setSongsLoading] = useState(true);
+
+  useEffect(() => {
+    apiService.getSongs()
+      .then(setSongs)
+      .catch(() => {})
+      .finally(() => setSongsLoading(false));
+  }, []);
+
+  const removeSongById = useCallback((id: string) => {
+    setSongs(prev => prev.filter(s => s.id !== id));
+  }, []);
 
   // Collections state (persisted to localStorage)
   const [collections, setCollections] = useState<Array<{ id: string; name: string; songIds: string[] }>>(() => {
@@ -328,6 +347,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       createCollection,
       addSongToCollection,
       removeSongFromCollection,
+      songs,
+      songsLoading,
+      removeSongById,
     }}>
       <audio
         ref={audioRef}

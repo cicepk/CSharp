@@ -28,6 +28,18 @@ export interface User {
   createdAt?: string;
 }
 
+export interface MediaItem {
+  id: string;
+  title: string;
+  artist: string;
+  mediaType: number; // 1=Audio, 2=Video
+  durationSeconds: number;
+  ownerId: string;
+  filePath: string;
+  coverPath?: string | null;
+  createdAt: string;
+}
+
 export interface PlayHistoryItem {
   id: string;
   mediaItemId: string;
