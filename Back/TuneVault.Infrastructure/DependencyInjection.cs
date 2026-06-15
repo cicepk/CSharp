@@ -33,6 +33,8 @@ public static class DependencyInjection
         // Services
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IDataSeeder, DataSeeder>();
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        services.AddScoped<IPasswordHasher, PasswordHasher>();
 
         return services;
     }
