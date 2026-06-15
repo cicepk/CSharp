@@ -1,8 +1,8 @@
 using MediatR;
 using TuneVault.Application.Features.Share.Commands;
 using TuneVault.Application.Interfaces;
-using TuneVault.Domain.Entities;
 using TuneVault.Domain.Enums;
+using DomainNotification = TuneVault.Domain.Entities.Notification;
 
 namespace TuneVault.Application.Features.Share.Commands
 {
@@ -80,7 +80,7 @@ namespace TuneVault.Application.Features.Share.Commands
             var senderName = sender?.UserName ?? "Ai đó";
             var target = command.MediaItemId.HasValue ? "một bài hát" : "một playlist";
 
-            var notification = new Notification
+            var notification = new DomainNotification
             {
                 Id        = Guid.NewGuid(),
                 UserId    = command.ReceiverUserId,

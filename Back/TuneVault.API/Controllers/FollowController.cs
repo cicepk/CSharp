@@ -1,11 +1,11 @@
 using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TuneVault.Application.DTOs.Common;
 using TuneVault.Application.DTOs.Follow;
-using TuneVault.Application.Interfaces;
-using TuneVault.Domain.Entities;
-using TuneVault.Domain.Enums;
+using TuneVault.Application.Features.Follow.Commands;
+using TuneVault.Application.Features.Follow.Queries;
 
 namespace TuneVault.API.Controllers;
 
@@ -14,21 +14,11 @@ namespace TuneVault.API.Controllers;
 [Authorize]
 public class FollowController : ControllerBase
 {
-    private readonly IFollowRepository _followRepo;
-    private readonly IUserRepository _userRepo;
-    private readonly INotificationRepository _notificationRepo;
-    private readonly INotificationPushService _pushService;
+    private readonly IMediator _mediator;
 
-    public FollowController(
-        IFollowRepository followRepo,
-        IUserRepository userRepo,
-        INotificationRepository notificationRepo,
-        INotificationPushService pushService)
+    public FollowController(IMediator mediator)
     {
-        _followRepo = followRepo;
-        _userRepo = userRepo;
-        _notificationRepo = notificationRepo;
-        _pushService = pushService;
+        _mediator = mediator;
     }
 
     private Guid GetCurrentUserId()
@@ -37,113 +27,63 @@ public class FollowController : ControllerBase
         return Guid.TryParse(claim?.Value, out var id) ? id : Guid.Empty;
     }
 
-    // POST /api/follow — Follow một user
+    // POST /api/follow
     [HttpPost]
     public async Task<IActionResult> Follow([FromBody] FollowRequest request, CancellationToken ct)
     {
-        var followerId = GetCurrentUserId();
-
-        if (request.UserId == Guid.Empty)
-            return BadRequest(ApiResponse<object>.ErrorResponse("UserId is required"));
-        if (request.UserId == followerId)
-            return BadRequest(ApiResponse<object>.ErrorResponse("Cannot follow yourself"));
-
-        var target = await _userRepo.GetByIdAsync(request.UserId, ct);
-        if (target == null)
-            return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
-
-        var alreadyFollowing = await _followRepo.IsFollowingAsync(followerId, request.UserId, ct);
-        if (alreadyFollowing)
-            return Conflict(ApiResponse<object>.ErrorResponse("Already following this user"));
-
-        await _followRepo.FollowAsync(followerId, request.UserId, ct);
-
-        // Notify the followed user
-        var follower = await _userRepo.GetByIdAsync(followerId, ct);
-        var notification = new Notification
+        await _mediator.Send(new FollowUserCommand
         {
-            Id = Guid.NewGuid(),
-            UserId = request.UserId,
-            Type = NotificationType.Followed,
-            Message = $"{follower?.UserName ?? "Someone"} is now following you",
-            IsRead = false,
-            CreatedAt = DateTime.UtcNow
-        };
-        await _notificationRepo.CreateAsync(notification, ct);
-
-        // Push real-time qua SignalR
-        await _pushService.PushAsync(
-            request.UserId.ToString(),
-            new
-            {
-                id        = notification.Id,
-                type      = (int)notification.Type,
-                message   = notification.Message,
-                isRead    = false,
-                createdAt = notification.CreatedAt
-            }, ct);
+            FollowerId   = GetCurrentUserId(),
+            TargetUserId = request.UserId
+        }, ct);
 
         return Ok(ApiResponse<object>.SuccessResponse(null!, "Followed successfully"));
     }
 
-    // DELETE /api/follow/{userId} — Unfollow một user
+    // DELETE /api/follow/{userId}
     [HttpDelete("{userId:guid}")]
     public async Task<IActionResult> Unfollow(Guid userId, CancellationToken ct)
     {
-        var followerId = GetCurrentUserId();
-
-        if (userId == followerId)
-            return BadRequest(ApiResponse<object>.ErrorResponse("Cannot unfollow yourself"));
-
-        var unfollowed = await _followRepo.UnfollowAsync(followerId, userId, ct);
-        if (!unfollowed)
-            return NotFound(ApiResponse<object>.ErrorResponse("You are not following this user"));
+        await _mediator.Send(new UnfollowUserCommand
+        {
+            FollowerId   = GetCurrentUserId(),
+            TargetUserId = userId
+        }, ct);
 
         return NoContent();
     }
 
-    // GET /api/follow/{userId}/followers — Danh sách followers của user
+    // GET /api/follow/{userId}/followers
     [HttpGet("{userId:guid}/followers")]
     public async Task<IActionResult> GetFollowers(Guid userId, CancellationToken ct)
     {
-        var target = await _userRepo.GetByIdAsync(userId, ct);
-        if (target == null)
-            return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
-
-        var followers = await _followRepo.GetFollowersAsync(userId, ct);
-        var dtos = followers.Select(u => new FollowerDto { Id = u.Id, Username = u.UserName }).ToList();
-
-        return Ok(ApiResponse<List<FollowerDto>>.SuccessResponse(dtos));
+        var result = await _mediator.Send(new GetFollowersQuery { UserId = userId }, ct);
+        return Ok(ApiResponse<List<FollowerDto>>.SuccessResponse(result));
     }
 
-    // GET /api/follow/{userId}/following — Danh sách user đang follow
+    // GET /api/follow/{userId}/following
     [HttpGet("{userId:guid}/following")]
     public async Task<IActionResult> GetFollowing(Guid userId, CancellationToken ct)
     {
-        var target = await _userRepo.GetByIdAsync(userId, ct);
-        if (target == null)
-            return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
-
-        var following = await _followRepo.GetFollowingAsync(userId, ct);
-        var dtos = following.Select(u => new FollowerDto { Id = u.Id, Username = u.UserName }).ToList();
-
-        return Ok(ApiResponse<List<FollowerDto>>.SuccessResponse(dtos));
+        var result = await _mediator.Send(new GetFollowingQuery { UserId = userId }, ct);
+        return Ok(ApiResponse<List<FollowerDto>>.SuccessResponse(result));
     }
 
-    // GET /api/follow/{userId}/status — Kiểm tra đang follow chưa
+    // GET /api/follow/{userId}/status
     [HttpGet("{userId:guid}/status")]
     public async Task<IActionResult> GetFollowStatus(Guid userId, CancellationToken ct)
     {
-        var currentUserId = GetCurrentUserId();
-        var isFollowing = await _followRepo.IsFollowingAsync(currentUserId, userId, ct);
-        var followerCount = await _followRepo.GetFollowerCountAsync(userId, ct);
-        var followingCount = await _followRepo.GetFollowingCountAsync(userId, ct);
+        var result = await _mediator.Send(new GetFollowStatusQuery
+        {
+            CurrentUserId = GetCurrentUserId(),
+            TargetUserId  = userId
+        }, ct);
 
         return Ok(ApiResponse<object>.SuccessResponse(new
         {
-            isFollowing,
-            followerCount,
-            followingCount
+            isFollowing    = result.IsFollowing,
+            followerCount  = result.FollowerCount,
+            followingCount = result.FollowingCount
         }));
     }
 }
