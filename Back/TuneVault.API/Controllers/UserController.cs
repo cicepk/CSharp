@@ -1,8 +1,11 @@
 using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TuneVault.Application.DTOs.Common;
 using TuneVault.Application.DTOs.User;
+using TuneVault.Application.Features.User.Commands;
+using TuneVault.Application.Features.User.Queries;
 using TuneVault.Application.Interfaces;
 
 namespace TuneVault.API.Controllers;
@@ -11,153 +14,76 @@ namespace TuneVault.API.Controllers;
 [Route("api/[controller]")]
 public class UserController : ControllerBase
 {
-    private readonly IUserRepository _userRepo;
-    private readonly IFollowRepository _followRepo;
-    private readonly IWebHostEnvironment _env;
+    private readonly IMediator           _mediator;
+    private readonly IFileStorageService _fileStorageService;
 
-    public UserController(IUserRepository userRepo, IFollowRepository followRepo, IWebHostEnvironment env)
+    public UserController(IMediator mediator, IFileStorageService fileStorageService)
     {
-        _userRepo = userRepo;
-        _followRepo = followRepo;
-        _env = env;
+        _mediator           = mediator;
+        _fileStorageService = fileStorageService;
     }
 
-    private Guid GetCurrentUserId()
-    {
+    private Guid   GetCurrentUserId() {
         var claim = User.FindFirst("userId") ?? User.FindFirst(ClaimTypes.NameIdentifier);
         return Guid.TryParse(claim?.Value, out var id) ? id : Guid.Empty;
     }
 
     private string BaseUrl => $"{Request.Scheme}://{Request.Host}";
 
-    // GET /api/user/{id} — Thông tin công khai của user
+    // GET /api/user/{id}
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var user = await _userRepo.GetByIdAsync(id, ct);
-        if (user == null)
-            return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
-
-        var followerCount = await _followRepo.GetFollowerCountAsync(id, ct);
-        var followingCount = await _followRepo.GetFollowingCountAsync(id, ct);
-
-        var dto = new UserDto
-        {
-            Id = user.Id,
-            Username = user.UserName,
-            Bio = user.Bio,
-            AvatarUrl = user.AvatarPath != null ? $"{BaseUrl}{user.AvatarPath}" : null,
-            FollowerCount = followerCount,
-            FollowingCount = followingCount,
-            CreatedAt = user.CreatedAt
-        };
-
-        return Ok(ApiResponse<UserDto>.SuccessResponse(dto));
+        var result = await _mediator.Send(new GetUserByIdQuery { UserId = id, BaseUrl = BaseUrl }, ct);
+        return Ok(ApiResponse<UserDto>.SuccessResponse(result));
     }
 
-    // GET /api/user/me — Thông tin đầy đủ của user hiện tại (cần auth)
+    // GET /api/user/me
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> GetMe(CancellationToken ct)
     {
-        var userId = GetCurrentUserId();
-        var user = await _userRepo.GetByIdAsync(userId, ct);
-        if (user == null)
-            return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
-
-        var followerCount = await _followRepo.GetFollowerCountAsync(userId, ct);
-        var followingCount = await _followRepo.GetFollowingCountAsync(userId, ct);
-
-        var dto = new UserDetailDto
+        var result = await _mediator.Send(new GetCurrentUserQuery
         {
-            Id = user.Id,
-            Username = user.UserName,
-            Email = user.Email,
-            Bio = user.Bio,
-            AvatarUrl = user.AvatarPath != null ? $"{BaseUrl}{user.AvatarPath}" : null,
-            FollowerCount = followerCount,
-            FollowingCount = followingCount,
-            CreatedAt = user.CreatedAt
-        };
+            UserId  = GetCurrentUserId(),
+            BaseUrl = BaseUrl
+        }, ct);
 
-        return Ok(ApiResponse<UserDetailDto>.SuccessResponse(dto));
+        return Ok(ApiResponse<UserDetailDto>.SuccessResponse(result));
     }
 
-    // PUT /api/user/me — Cập nhật profile (cần auth)
+    // PUT /api/user/me
     [HttpPut("me")]
     [Authorize]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request, CancellationToken ct)
     {
-        var errors = new List<string>();
-        if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Length < 3)
-            errors.Add("Username must be at least 3 characters");
-        if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains('@'))
-            errors.Add("Invalid email format");
-        if (request.Bio != null && request.Bio.Length > 300)
-            errors.Add("Bio must be 300 characters or less");
-
-        if (errors.Count > 0)
-            return BadRequest(ApiResponse<object>.ErrorResponse(errors.ToArray(), "Validation failed"));
-
-        var userId = GetCurrentUserId();
-        var user = await _userRepo.GetByIdAsync(userId, ct);
-        if (user == null)
-            return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
-
-        if (user.UserName != request.Username)
+        var result = await _mediator.Send(new UpdateProfileCommand
         {
-            var existing = await _userRepo.GetByUsernameAsync(request.Username, ct);
-            if (existing != null)
-                return Conflict(ApiResponse<object>.ErrorResponse("Username already taken"));
-        }
+            UserId   = GetCurrentUserId(),
+            Username = request.Username,
+            Email    = request.Email,
+            Bio      = request.Bio
+        }, ct);
 
-        if (user.Email != request.Email)
-        {
-            var existing = await _userRepo.GetByEmailAsync(request.Email, ct);
-            if (existing != null)
-                return Conflict(ApiResponse<object>.ErrorResponse("Email already in use"));
-        }
-
-        user.UserName = request.Username;
-        user.Email = request.Email;
-        user.Bio = request.Bio;
-
-        await _userRepo.UpdateAsync(user, ct);
-
-        return Ok(ApiResponse<object>.SuccessResponse(new
-        {
-            userId,
-            username = request.Username,
-            email = request.Email,
-            bio = request.Bio
-        }, "Profile updated"));
+        return Ok(ApiResponse<object>.SuccessResponse(result, "Profile updated"));
     }
 
-    // GET /api/user/search?q= — Tìm kiếm user theo username
+    // GET /api/user/search?q=
     [HttpGet("search")]
     [Authorize]
     public async Task<IActionResult> Search([FromQuery] string q, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
-            return Ok(ApiResponse<object>.SuccessResponse(Array.Empty<object>()));
+        var result = await _mediator.Send(new SearchUsersQuery
+        {
+            Q             = q,
+            CurrentUserId = GetCurrentUserId(),
+            BaseUrl       = BaseUrl
+        }, ct);
 
-        var users = await _userRepo.SearchAsync(q.Trim(), limit: 10, ct);
-        var currentUserId = GetCurrentUserId();
-
-        var dtos = users
-            .Where(u => u.Id != currentUserId)
-            .Select(u => new
-            {
-                id        = u.Id,
-                username  = u.UserName,
-                avatarUrl = u.AvatarPath != null ? $"{BaseUrl}{u.AvatarPath}" : (string?)null,
-                bio       = u.Bio
-            });
-
-        return Ok(ApiResponse<object>.SuccessResponse(dtos));
+        return Ok(ApiResponse<List<UserSearchResultDto>>.SuccessResponse(result));
     }
 
-    // POST /api/user/me/avatar — Upload avatar (cần auth)
+    // POST /api/user/me/avatar
     [HttpPost("me/avatar")]
     [Authorize]
     public async Task<IActionResult> UploadAvatar(IFormFile file, CancellationToken ct)
@@ -174,33 +100,26 @@ public class UserController : ControllerBase
             return BadRequest(ApiResponse<object>.ErrorResponse("File size must be under 5MB"));
 
         var userId = GetCurrentUserId();
-        var user = await _userRepo.GetByIdAsync(userId, ct);
-        if (user == null)
-            return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
 
-        var avatarsDir = Path.Combine(_env.WebRootPath, "uploads", "avatars");
-        Directory.CreateDirectory(avatarsDir);
+        // Lấy avatar path cũ trước khi save
+        var currentUser = await _mediator.Send(new GetCurrentUserQuery { UserId = userId, BaseUrl = BaseUrl }, ct);
+        var oldAvatarPath = currentUser.AvatarUrl != null
+            ? "/" + string.Join("/", currentUser.AvatarUrl.Split('/').Skip(3))
+            : null;
 
-        // Xóa avatar cũ nếu có
-        if (!string.IsNullOrEmpty(user.AvatarPath))
+        using var stream   = file.OpenReadStream();
+        var newAvatarPath  = await _fileStorageService.SaveAsync(stream, $"{userId}{ext}", "avatars", ct);
+
+        var avatarUrl = await _mediator.Send(new UploadAvatarCommand
         {
-            var oldFile = Path.Combine(_env.WebRootPath, user.AvatarPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
-            if (System.IO.File.Exists(oldFile))
-                System.IO.File.Delete(oldFile);
-        }
-
-        var fileName = $"{userId}{ext}";
-        var savePath = Path.Combine(avatarsDir, fileName);
-
-        using (var stream = new FileStream(savePath, FileMode.Create))
-            await file.CopyToAsync(stream, ct);
-
-        user.AvatarPath = $"/uploads/avatars/{fileName}";
-        await _userRepo.UpdateAsync(user, ct);
+            UserId        = userId,
+            NewAvatarPath = newAvatarPath,
+            OldAvatarPath = oldAvatarPath
+        }, ct);
 
         return Ok(ApiResponse<object>.SuccessResponse(new
         {
-            avatarUrl = $"{BaseUrl}{user.AvatarPath}"
+            avatarUrl = $"{BaseUrl}{avatarUrl}"
         }, "Avatar updated"));
     }
 }

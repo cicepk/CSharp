@@ -1,9 +1,11 @@
 using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TuneVault.Application.DTOs.Common;
 using TuneVault.Application.DTOs.PlayHistory;
-using TuneVault.Application.Interfaces;
+using TuneVault.Application.Features.PlayHistory.Commands;
+using TuneVault.Application.Features.PlayHistory.Queries;
 
 namespace TuneVault.API.Controllers;
 
@@ -12,13 +14,11 @@ namespace TuneVault.API.Controllers;
 [Authorize]
 public class PlayHistoryController : ControllerBase
 {
-    private readonly IPlayHistoryRepository _historyRepo;
-    private readonly IMediaItemRepository _mediaRepo;
+    private readonly IMediator _mediator;
 
-    public PlayHistoryController(IPlayHistoryRepository historyRepo, IMediaItemRepository mediaRepo)
+    public PlayHistoryController(IMediator mediator)
     {
-        _historyRepo = historyRepo;
-        _mediaRepo = mediaRepo;
+        _mediator = mediator;
     }
 
     private Guid GetCurrentUserId()
@@ -27,48 +27,29 @@ public class PlayHistoryController : ControllerBase
         return Guid.TryParse(claim?.Value, out var id) ? id : Guid.Empty;
     }
 
-    // GET /api/playhistory — 10 bài nghe gần nhất
+    // GET /api/playhistory
     [HttpGet]
     public async Task<IActionResult> GetHistory(CancellationToken ct)
     {
-        var userId = GetCurrentUserId();
-        var history = await _historyRepo.GetRecentByUserIdAsync(userId, 10, ct);
-
-        var dtos = new List<PlayHistoryDto>();
-        foreach (var h in history)
+        var result = await _mediator.Send(new GetPlayHistoryQuery
         {
-            var media = await _mediaRepo.GetByIdAsync(h.MediaItemId, ct);
-            if (media == null) continue;
+            UserId  = GetCurrentUserId(),
+            BaseUrl = $"{Request.Scheme}://{Request.Host}"
+        }, ct);
 
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            dtos.Add(new PlayHistoryDto
-            {
-                Id = h.Id,
-                MediaItemId = h.MediaItemId,
-                Title = media.Title,
-                Artist = media.Artist,
-                StreamUrl = $"{baseUrl}/api/mediaitems/{media.Id}/stream",
-                CoverPath = media.CoverPath != null ? $"{baseUrl}{media.CoverPath}" : null,
-                PlayedAt = h.PlayedAt
-            });
-        }
-
-        return Ok(ApiResponse<List<PlayHistoryDto>>.SuccessResponse(dtos));
+        return Ok(ApiResponse<List<PlayHistoryDto>>.SuccessResponse(result));
     }
 
-    // POST /api/playhistory — Ghi nhận lượt nghe
+    // POST /api/playhistory
     [HttpPost]
     public async Task<IActionResult> Record([FromBody] RecordPlayRequest request, CancellationToken ct)
     {
-        if (request.MediaItemId == Guid.Empty)
-            return BadRequest(ApiResponse<object>.ErrorResponse("MediaItemId is required"));
-
-        var media = await _mediaRepo.GetByIdAsync(request.MediaItemId, ct);
-        if (media == null)
-            return NotFound(ApiResponse<object>.ErrorResponse("Media not found"));
-
-        var userId = GetCurrentUserId();
-        await _historyRepo.RecordAsync(userId, request.MediaItemId, request.DurationSeconds, ct);
+        await _mediator.Send(new RecordPlayCommand
+        {
+            UserId          = GetCurrentUserId(),
+            MediaItemId     = request.MediaItemId,
+            DurationSeconds = request.DurationSeconds
+        }, ct);
 
         return Ok(ApiResponse<object>.SuccessResponse(null!, "Play recorded"));
     }

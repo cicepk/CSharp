@@ -1,9 +1,11 @@
 using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TuneVault.Application.DTOs.Common;
 using TuneVault.Application.DTOs.Notification;
-using TuneVault.Application.Interfaces;
+using TuneVault.Application.Features.Notification.Commands;
+using TuneVault.Application.Features.Notification.Queries;
 
 namespace TuneVault.API.Controllers;
 
@@ -12,11 +14,11 @@ namespace TuneVault.API.Controllers;
 [Authorize]
 public class NotificationController : ControllerBase
 {
-    private readonly INotificationRepository _notificationRepo;
+    private readonly IMediator _mediator;
 
-    public NotificationController(INotificationRepository notificationRepo)
+    public NotificationController(IMediator mediator)
     {
-        _notificationRepo = notificationRepo;
+        _mediator = mediator;
     }
 
     private Guid GetCurrentUserId()
@@ -25,72 +27,58 @@ public class NotificationController : ControllerBase
         return Guid.TryParse(claim?.Value, out var id) ? id : Guid.Empty;
     }
 
-    // GET /api/notification — Lấy tất cả thông báo
+    // GET /api/notification
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] bool unreadOnly = false, CancellationToken ct = default)
     {
-        var userId = GetCurrentUserId();
-        var notifications = await _notificationRepo.GetByUserIdAsync(userId, unreadOnly, ct);
-
-        var dtos = notifications.Select(n => new NotificationDto
+        var result = await _mediator.Send(new GetNotificationsQuery
         {
-            Id = n.Id,
-            Type = (int)n.Type,
-            Message = n.Message,
-            SenderUsername = string.Empty,
-            TargetId = null,
-            IsRead = n.IsRead,
-            CreatedAt = n.CreatedAt
-        }).ToList();
+            UserId     = GetCurrentUserId(),
+            UnreadOnly = unreadOnly
+        }, ct);
 
-        return Ok(ApiResponse<List<NotificationDto>>.SuccessResponse(dtos));
+        return Ok(ApiResponse<List<NotificationDto>>.SuccessResponse(result));
     }
 
-    // GET /api/notification/unread-count — Số thông báo chưa đọc
+    // GET /api/notification/unread-count
     [HttpGet("unread-count")]
     public async Task<IActionResult> GetUnreadCount(CancellationToken ct)
     {
-        var userId = GetCurrentUserId();
-        var count = await _notificationRepo.GetUnreadCountAsync(userId, ct);
+        var count = await _mediator.Send(new GetUnreadCountQuery { UserId = GetCurrentUserId() }, ct);
         return Ok(ApiResponse<object>.SuccessResponse(new { count }));
     }
 
-    // PUT /api/notification/{id}/read — Đánh dấu đã đọc
+    // PUT /api/notification/{id}/read
     [HttpPut("{id:guid}/read")]
     public async Task<IActionResult> MarkAsRead(Guid id, CancellationToken ct)
     {
-        var notification = await _notificationRepo.GetByIdAsync(id, ct);
-        if (notification == null)
-            return NotFound(ApiResponse<object>.ErrorResponse("Notification not found"));
+        await _mediator.Send(new MarkAsReadCommand
+        {
+            NotificationId = id,
+            CurrentUserId  = GetCurrentUserId()
+        }, ct);
 
-        if (notification.UserId != GetCurrentUserId())
-            return Forbid();
-
-        await _notificationRepo.MarkAsReadAsync(id, ct);
         return Ok(ApiResponse<object>.SuccessResponse(null!, "Marked as read"));
     }
 
-    // PUT /api/notification/read-all — Đánh dấu tất cả đã đọc
+    // PUT /api/notification/read-all
     [HttpPut("read-all")]
     public async Task<IActionResult> MarkAllAsRead(CancellationToken ct)
     {
-        var userId = GetCurrentUserId();
-        var count = await _notificationRepo.MarkAllAsReadAsync(userId, ct);
+        var count = await _mediator.Send(new MarkAllAsReadCommand { UserId = GetCurrentUserId() }, ct);
         return Ok(ApiResponse<object>.SuccessResponse(new { updatedCount = count }, "All marked as read"));
     }
 
-    // DELETE /api/notification/{id} — Xóa thông báo
+    // DELETE /api/notification/{id}
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var notification = await _notificationRepo.GetByIdAsync(id, ct);
-        if (notification == null)
-            return NotFound(ApiResponse<object>.ErrorResponse("Notification not found"));
+        await _mediator.Send(new DeleteNotificationCommand
+        {
+            NotificationId = id,
+            CurrentUserId  = GetCurrentUserId()
+        }, ct);
 
-        if (notification.UserId != GetCurrentUserId())
-            return Forbid();
-
-        await _notificationRepo.DeleteAsync(id, ct);
         return NoContent();
     }
 }
