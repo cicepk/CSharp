@@ -7,6 +7,7 @@ import Playlist from './pages/Playlist.tsx';
 import Artist from './pages/Artist';
 import CollectionPage from './pages/Collection.tsx';
 import Profile from './pages/Profile';
+import Notifications from './pages/Notifications';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -35,6 +36,7 @@ function App() {
               <Route path="/playlist/:id" element={<Playlist />} />
               <Route path="/artist/:id" element={<Artist />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/notifications" element={<Notifications />} />
             </Route>
           </Routes>
         </Router>

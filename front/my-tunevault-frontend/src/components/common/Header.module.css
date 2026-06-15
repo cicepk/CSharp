@@ -19,6 +19,9 @@
 .notifDot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
 .notifContent p { margin: 0; font-size: 0.75rem; line-height: 1.4; }
 .notifMeta { margin: 3px 0 0; font-size: 0.68rem; color: #6b6b6b; }
+.notifFooter { border-top: 1px solid #3e3e3e; padding: 8px; }
+.viewAllBtn { display: block; width: 100%; padding: 8px; background: none; border: none; color: #1db954; font-size: 0.8rem; cursor: pointer; border-radius: 4px; transition: background 0.15s; }
+.viewAllBtn:hover { background: rgba(29,185,84,0.1); }
 .profileWrap { position: relative; }
 .profileBtn { width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; color: #000; transition: transform 0.15s, background-color 0.15s; flex-shrink: 0; overflow: hidden; padding: 0; }
 .profileBtn.hasAvatar { background-color: transparent; }

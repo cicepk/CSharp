@@ -226,6 +226,11 @@ export default function Header() {
                     ))
                   )}
                 </div>
+                <div className={styles.notifFooter}>
+                  <button onClick={() => { setNotifOpen(false); navigate('/notifications'); }} className={styles.viewAllBtn}>
+                    View all notifications
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -1,4 +1,4 @@
-import type { Song, Playlist, User, PlayHistoryItem, NotificationItem, UserSearchResult, FollowStatus } from '../types';
+import type { Song, Playlist, User, PlayHistoryItem, NotificationItem, UserSearchResult, FollowStatus, MediaItem } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5067/api';
 const API_ORIGIN = API_BASE_URL.replace(/\/api.*$/, '');
@@ -111,6 +111,10 @@ class ApiService {
     if (!response.ok) {
       const text = await response.text();
       throw new Error(`${response.status}: ${text}`);
+    }
+
+    if (response.status === 204) {
+      return null as T;
     }
 
     return response.json();
@@ -333,6 +337,10 @@ class ApiService {
     await this.fetch('/notification/read-all', { method: 'PUT' });
   }
 
+  async deleteNotification(id: string): Promise<void> {
+    await this.fetch(`/notification/${id}`, { method: 'DELETE' });
+  }
+
   async togglePlaylistVisibility(playlistId: string, isPublic: boolean): Promise<void> {
     await this.fetch(`/playlist/${playlistId}/visibility`, {
       method: 'PATCH',
@@ -405,6 +413,18 @@ class ApiService {
     const res = await this.fetch<ApiResponse<RawPlaylist[]>>(`/playlist/user/${userId}/public`);
     if (!res.success) return [];
     return (res.data ?? []).map(toPlaylist);
+  }
+
+  // Media items uploaded by the current user
+  async getMyUploads(): Promise<MediaItem[]> {
+    const res = await this.fetch<ApiResponse<MediaItem[]>>('/mediaitems/my-uploads');
+    if (!res.success) return [];
+    return res.data ?? [];
+  }
+
+  // Delete a media item (only owner can do this)
+  async deleteMedia(id: string): Promise<void> {
+    await this.fetch<ApiResponse<null>>(`/mediaitems/${id}`, { method: 'DELETE' });
   }
 }
 
