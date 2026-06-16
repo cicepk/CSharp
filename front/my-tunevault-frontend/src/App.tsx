@@ -8,6 +8,7 @@ import Artist from './pages/Artist';
 import CollectionPage from './pages/Collection.tsx';
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
+import VideoPlayer from './pages/VideoPlayer';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -37,6 +38,7 @@ function App() {
               <Route path="/artist/:id" element={<Artist />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/notifications" element={<Notifications />} />
+              <Route path="/video/:id" element={<VideoPlayer />} />
             </Route>
           </Routes>
         </Router>

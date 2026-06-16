@@ -97,6 +97,7 @@ export default function Search() {
   const [isLoading, setIsLoading] = useState(false);
   const [shareTarget, setShareTarget] = useState<Song | null>(null);
   const { currentSong, isPlaying, setQueue } = useMusic();
+  const navigate = useNavigate();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const doSearch = async (q: string) => {
@@ -179,7 +180,10 @@ export default function Search() {
                     song={song}
                     isActive={isActive}
                     isPlaying={isPlaying}
-                    onPlay={() => setQueue(songs, idx)}
+                    onPlay={() => {
+                      setQueue(songs, idx);
+                      if (song.mediaType === 2) navigate(`/video/${song.id}`);
+                    }}
                     onShare={() => setShareTarget(song)}
                   />
                 );

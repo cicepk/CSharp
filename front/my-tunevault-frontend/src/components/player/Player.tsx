@@ -25,10 +25,12 @@ export default function Player() {
   const {
     currentSong, isPlaying, togglePlayPause,
     playNext, playPrevious,
-    currentTime, duration, audioRef,
+    currentTime, duration, audioRef, videoRef,
     queue, queueIndex,
     isRepeat, isShuffle, toggleRepeat, toggleShuffle,
   } = useMusic();
+
+  const activeRef = currentSong?.mediaType === 2 ? videoRef : audioRef;
 
   const [volume, setVolume] = useState(70);
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -39,8 +41,8 @@ export default function Player() {
   const [favPlaylistId, setFavPlaylistId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = volume / 100;
-  }, [volume, audioRef]);
+    if (activeRef.current) activeRef.current.volume = volume / 100;
+  }, [volume, activeRef]);
 
   // sync favourite state and detect favourite playlist
   useEffect(() => {
@@ -141,9 +143,9 @@ export default function Player() {
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!audioRef.current || !duration) return;
+    if (!activeRef.current || !duration) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    audioRef.current.currentTime = ((e.clientX - rect.left) / rect.width) * duration;
+    activeRef.current.currentTime = ((e.clientX - rect.left) / rect.width) * duration;
   };
 
   const hasNext = queue.length > 0 && (isShuffle || queueIndex < queue.length - 1);
@@ -249,7 +251,6 @@ export default function Player() {
             onClick={togglePlayPause}
             title={isPlaying ? 'Pause' : 'Play'}
             className={styles.playButton}
-            style={{ transform: undefined }}
           >
             <img
               src={isPlaying ? pauseImg : playButtonImg}
@@ -292,7 +293,7 @@ export default function Player() {
             onClick={handleToggleFavourite}
             title={isFav ? 'Unfavorite' : 'Favorite'}
             className={styles.iconControl}
-            style={{ color: isFav ? '#e0245e' : undefined, marginLeft: '6px' }}
+            style={{ color: isFav ? '#e0245e' : undefined }}
           >
             {isFav ? (
               <svg width="16" height="16" viewBox="0 0 24 24" fill="#e0245e" xmlns="http://www.w3.org/2000/svg">

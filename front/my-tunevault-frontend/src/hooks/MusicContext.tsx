@@ -9,6 +9,7 @@ interface MusicContextType {
   currentTime: number;
   duration: number;
   audioRef: React.RefObject<HTMLAudioElement | null>;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
   queue: Song[];
   queueIndex: number;
   isRepeat: boolean;
@@ -17,6 +18,12 @@ interface MusicContextType {
   pauseSong: () => void;
   togglePlayPause: () => void;
   setQueue: (songs: Song[], startIndex: number) => void;
+  loadVideo: (song: Song) => void;
+  onVideoPlay: () => void;
+  onVideoPause: () => void;
+  onVideoTimeUpdate: () => void;
+  onVideoLoadedMetadata: () => void;
+  onVideoEnded: () => void;
   playNext: () => void;
   playPrevious: () => void;
   toggleRepeat: () => void;
@@ -39,6 +46,7 @@ const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
 export function MusicProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const lastRecordedIdRef = useRef<string | null>(null);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -113,6 +121,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume / 100;
+    if (videoRef.current) videoRef.current.volume = volume / 100;
   }, [volume]);
 
   useEffect(() => {
@@ -134,12 +143,19 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
   const playSongAtIndex = useCallback((songs: Song[], index: number) => {
     const song = songs[index];
-    if (!song || !audioRef.current) return;
-    audioRef.current.src = song.url;
-    audioRef.current.play();
+    if (!song) return;
+    if (videoRef.current) videoRef.current.pause();
     setCurrentSong(song);
-    setIsPlaying(true);
     setQueueIndex(index);
+    if (song.mediaType === 2) {
+      // Video is rendered (and played) by the VideoPlayer page itself; just register it as current.
+      if (audioRef.current) audioRef.current.pause();
+      setIsPlaying(false);
+    } else if (audioRef.current) {
+      audioRef.current.src = song.url;
+      audioRef.current.play();
+      setIsPlaying(true);
+    }
     if (song.id !== lastRecordedIdRef.current) {
       lastRecordedIdRef.current = song.id;
       apiService.recordPlay(song.id).catch(() => {});
@@ -147,21 +163,49 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const playSong = useCallback((song: Song) => {
-    if (!audioRef.current) return;
     if (currentSong?.id === song.id && isPlaying) {
-      audioRef.current.pause();
+      if (audioRef.current) audioRef.current.pause();
+      if (videoRef.current) videoRef.current.pause();
       setIsPlaying(false);
     } else {
       if (song.id !== lastRecordedIdRef.current) {
         lastRecordedIdRef.current = song.id;
         apiService.recordPlay(song.id).catch(() => {});
       }
-      audioRef.current.src = song.url;
-      audioRef.current.play();
+      if (videoRef.current) videoRef.current.pause();
       setCurrentSong(song);
-      setIsPlaying(true);
+      if (song.mediaType === 2) {
+        if (audioRef.current) audioRef.current.pause();
+        setIsPlaying(false);
+      } else if (audioRef.current) {
+        audioRef.current.src = song.url;
+        audioRef.current.play();
+        setIsPlaying(true);
+      }
     }
   }, [currentSong?.id, isPlaying]);
+
+  // Đăng ký bài hiện tại khi vào trang /video/:id trực tiếp (vd. bookmark) — không qua setQueue
+  const loadVideo = useCallback((song: Song) => {
+    if (audioRef.current) audioRef.current.pause();
+    setCurrentSong(song);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+    if (song.id !== lastRecordedIdRef.current) {
+      lastRecordedIdRef.current = song.id;
+      apiService.recordPlay(song.id).catch(() => {});
+    }
+  }, []);
+
+  const onVideoPlay = useCallback(() => setIsPlaying(true), []);
+  const onVideoPause = useCallback(() => setIsPlaying(false), []);
+  const onVideoTimeUpdate = useCallback(() => setCurrentTime(videoRef.current?.currentTime ?? 0), []);
+  const onVideoLoadedMetadata = useCallback(() => setDuration(videoRef.current?.duration ?? 0), []);
+
+  const getActiveRef = useCallback((): HTMLAudioElement | HTMLVideoElement | null => {
+    return currentSong?.mediaType === 2 ? videoRef.current : audioRef.current;
+  }, [currentSong?.mediaType]);
 
   const setQueue = useCallback((songs: Song[], startIndex: number) => {
     setQueueState(songs);
@@ -185,33 +229,45 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     playSongAtIndex(queue, nextIndex);
   }, [queue, queueIndex, isShuffle, playSongAtIndex]);
 
+  const onVideoEnded = useCallback(() => {
+    if (isRepeat && videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play();
+    } else {
+      playNext();
+    }
+  }, [isRepeat, playNext]);
+
   const playPrevious = useCallback(() => {
     if (queue.length === 0) return;
-    if (audioRef.current && audioRef.current.currentTime > 3) {
-      audioRef.current.currentTime = 0;
+    const activeRef = getActiveRef();
+    if (activeRef && activeRef.currentTime > 3) {
+      activeRef.currentTime = 0;
       return;
     }
     const prevIndex = (queueIndex - 1 + queue.length) % queue.length;
     playSongAtIndex(queue, prevIndex);
-  }, [queue, queueIndex, playSongAtIndex]);
+  }, [queue, queueIndex, playSongAtIndex, getActiveRef]);
 
   const pauseSong = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
+    const activeRef = getActiveRef();
+    if (activeRef) {
+      activeRef.pause();
       setIsPlaying(false);
     }
-  }, []);
+  }, [getActiveRef]);
 
   const togglePlayPause = useCallback(() => {
-    if (!audioRef.current) return;
+    const activeRef = getActiveRef();
+    if (!activeRef) return;
     if (isPlaying) {
-      audioRef.current.pause();
+      activeRef.pause();
       setIsPlaying(false);
     } else if (currentSong) {
-      audioRef.current.play();
+      activeRef.play();
       setIsPlaying(true);
     }
-  }, [isPlaying, currentSong]);
+  }, [isPlaying, currentSong, getActiveRef]);
 
   const isFavorite = useCallback((id: string) => {
     return favorites.has(id);
@@ -327,6 +383,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       currentTime,
       duration,
       audioRef,
+      videoRef,
       queue,
       queueIndex,
       isRepeat,
@@ -335,6 +392,12 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       pauseSong,
       togglePlayPause,
       setQueue,
+      loadVideo,
+      onVideoPlay,
+      onVideoPause,
+      onVideoTimeUpdate,
+      onVideoLoadedMetadata,
+      onVideoEnded,
       playNext,
       playPrevious,
       toggleRepeat,

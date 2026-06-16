@@ -60,6 +60,7 @@ function toSong(item: RawMediaItem): Song {
     artist: item.artist,
     url: absoluteUrl(item.filePath),
     cover: absoluteUrl(item.coverPath ?? ''),
+    mediaType: item.mediaType,
   };
 }
 
@@ -232,6 +233,12 @@ class ApiService {
     const res = await this.fetch<ApiResponse<RawMediaItem[]>>('/mediaitems');
     if (!res.success || !res.data) throw new Error(res.error ?? 'Failed to fetch songs');
     return res.data.map(toSong);
+  }
+
+  async getMediaById(id: string): Promise<Song> {
+    const res = await this.fetch<ApiResponse<RawMediaItem>>(`/mediaitems/${id}`);
+    if (!res.success || !res.data) throw new Error(res.error ?? 'Media not found');
+    return toSong(res.data);
   }
 
   async searchSongs(query: string): Promise<Song[]> {
