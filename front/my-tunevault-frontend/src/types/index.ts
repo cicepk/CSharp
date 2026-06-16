@@ -73,3 +73,14 @@ export interface NotificationItem {
   isRead: boolean;
   createdAt: string;
 }
+
+export interface ShareItem {
+  id: string;
+  mediaItemId: string | null;
+  playlistId: string | null;
+  sharedByUserId: string;
+  sharedByUsername: string;
+  sharedToUserId: string;
+  sharedToUsername: string;
+  sharedAt: string;
+}

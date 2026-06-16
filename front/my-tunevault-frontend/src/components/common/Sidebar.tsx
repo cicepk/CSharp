@@ -69,6 +69,21 @@ export default function Sidebar() {
         >
           📚 Library
         </NavLink>
+        <NavLink
+          to="/share/inbox"
+          style={({ isActive }) => ({
+            display: 'block',
+            padding: '0.75rem 1.5rem',
+            color: isActive ? '#000' : '#b3b3b3',
+            backgroundColor: isActive ? '#1db954' : 'transparent',
+            textDecoration: 'none',
+            cursor: 'pointer',
+            fontWeight: isActive ? 'bold' : 'normal',
+            transition: 'all 0.2s'
+          })}
+        >
+          📤 Shares
+        </NavLink>
       </nav>
 
 

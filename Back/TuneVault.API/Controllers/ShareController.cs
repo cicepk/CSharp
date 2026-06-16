@@ -89,5 +89,22 @@ namespace TuneVault.API.Controllers
 
             return Ok(ApiResponse<IEnumerable<MediaShareDto>>.SetSuccess(result, "Lấy danh sách đã gửi thành công."));
         }
+
+        /// <summary>
+        /// Xóa một bản ghi chia sẻ (người gửi hoặc người nhận đều có thể xóa).
+        /// DELETE /api/share/{id}
+        /// </summary>
+        [HttpDelete("{id:guid}")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(401)]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var userId = GetCurrentUserId();
+            if (userId is null)
+                return Unauthorized(ApiResponse<object>.SetFailure(new() { "Token không hợp lệ hoặc đã hết hạn." }));
+
+            await _mediator.Send(new DeleteShareCommand { ShareId = id, CurrentUserId = userId.Value });
+            return NoContent();
+        }
     }
 }

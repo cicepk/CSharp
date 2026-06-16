@@ -1,4 +1,4 @@
-import type { Song, Playlist, User, PlayHistoryItem, NotificationItem, UserSearchResult, FollowStatus, MediaItem } from '../types';
+import type { Song, Playlist, User, PlayHistoryItem, NotificationItem, UserSearchResult, FollowStatus, MediaItem, ShareItem } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5067/api';
 const API_ORIGIN = API_BASE_URL.replace(/\/api.*$/, '');
@@ -395,6 +395,22 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ receiverUserId, mediaItemId: mediaItemId ?? null, playlistId: playlistId ?? null }),
     });
+  }
+
+  async getShareInbox(): Promise<ShareItem[]> {
+    const res = await this.fetch<ApiResponse<ShareItem[]>>('/share/inbox');
+    if (!res.success) return [];
+    return res.data ?? [];
+  }
+
+  async getShareSent(): Promise<ShareItem[]> {
+    const res = await this.fetch<ApiResponse<ShareItem[]>>('/share/sent');
+    if (!res.success) return [];
+    return res.data ?? [];
+  }
+
+  async deleteShare(id: string): Promise<void> {
+    await this.fetch(`/share/${id}`, { method: 'DELETE' });
   }
 
   // Follow
