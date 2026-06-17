@@ -1,0 +1,145 @@
+.page {
+  padding: 32px 40px;
+  max-width: 720px;
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.title {
+  margin: 0 0 16px;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.tabRow {
+  display: flex;
+  gap: 8px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #b3b3b3;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab:hover {
+  background: #1a1a1a;
+}
+
+.activeTab {
+  background: #1db954;
+  color: #000;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.item:hover {
+  background: #1a1a1a;
+}
+
+.cover {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  object-fit: cover;
+  background-color: #282828;
+}
+
+.content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.itemTitle {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemSub {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: #b3b3b3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  margin: 4px 0 0;
+  font-size: 0.72rem;
+  color: #6a6a6a;
+}
+
+.deleteBtn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #6a6a6a;
+  font-size: 0.8rem;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.item:hover .deleteBtn {
+  opacity: 1;
+}
+
+.deleteBtn:hover {
+  color: #ff6b6b;
+}
+
+.empty {
+  margin: 0;
+  padding: 20px 0;
+  font-size: 0.875rem;
+  color: #b3b3b3;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 0;
+  gap: 12px;
+}
+
+.emptyIcon {
+  font-size: 2.5rem;
+}
+
+.emptyText {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #b3b3b3;
+}

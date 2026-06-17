@@ -3,11 +3,16 @@
 @tailwind utilities;
 
 /* Project base overrides (kept after Tailwind base) */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 html,
 body,
 #root {
   height: 100%;
   width: 100%;
+  margin: 0;
 }
 
 body {

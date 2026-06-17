@@ -24,6 +24,9 @@ public class MediaShareDto
     // ID của user nhận (người được chia sẻ)
     public Guid SharedToUserId { get; set; }
 
+    // Tên user nhận (để frontend hiển thị)
+    public string SharedToUsername { get; set; } = string.Empty;
+
     // Thời gian chia sẻ (UTC)
     public DateTime SharedAt { get; set; }
 }

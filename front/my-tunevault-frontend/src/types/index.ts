@@ -4,6 +4,7 @@ export interface Song {
   artist: string;
   cover: string;
   url: string;
+  mediaType: number; // 1=Audio, 2=Video
 }
 
 export interface Playlist {
@@ -71,4 +72,15 @@ export interface NotificationItem {
   targetId?: string | null;
   isRead: boolean;
   createdAt: string;
+}
+
+export interface ShareItem {
+  id: string;
+  mediaItemId: string | null;
+  playlistId: string | null;
+  sharedByUserId: string;
+  sharedByUsername: string;
+  sharedToUserId: string;
+  sharedToUsername: string;
+  sharedAt: string;
 }

@@ -7,24 +7,43 @@ namespace TuneVault.Application.Features.Share.Queries;
 public class GetShareInboxHandler : IRequestHandler<GetShareInboxQuery, IEnumerable<MediaShareDto>>
 {
     private readonly IMediaShareRepository _shareRepository;
+    private readonly IUserRepository _userRepository;
 
-    public GetShareInboxHandler(IMediaShareRepository shareRepository)
+    public GetShareInboxHandler(IMediaShareRepository shareRepository, IUserRepository userRepository)
     {
         _shareRepository = shareRepository;
+        _userRepository  = userRepository;
     }
 
     public async Task<IEnumerable<MediaShareDto>> Handle(GetShareInboxQuery query, CancellationToken cancellationToken)
     {
         var shares = await _shareRepository.GetSharedWithMeAsync(query.UserId, cancellationToken);
 
-        return shares.Select(s => new MediaShareDto
+        var usernameCache = new Dictionary<Guid, string>();
+        async Task<string> ResolveUsernameAsync(Guid userId)
         {
-            Id             = s.Id,
-            MediaItemId    = s.MediaItemId,
-            PlaylistId     = s.PlaylistId,
-            SharedByUserId = s.SharedByUserId,
-            SharedToUserId = s.SharedToUserId,
-            SharedAt       = s.SharedAt
-        });
+            if (usernameCache.TryGetValue(userId, out var cached)) return cached;
+            var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+            var username = user?.UserName ?? string.Empty;
+            usernameCache[userId] = username;
+            return username;
+        }
+
+        var result = new List<MediaShareDto>();
+        foreach (var s in shares)
+        {
+            result.Add(new MediaShareDto
+            {
+                Id               = s.Id,
+                MediaItemId      = s.MediaItemId,
+                PlaylistId       = s.PlaylistId,
+                SharedByUserId   = s.SharedByUserId,
+                SharedByUsername = await ResolveUsernameAsync(s.SharedByUserId),
+                SharedToUserId   = s.SharedToUserId,
+                SharedToUsername = await ResolveUsernameAsync(s.SharedToUserId),
+                SharedAt         = s.SharedAt
+            });
+        }
+        return result;
     }
 }

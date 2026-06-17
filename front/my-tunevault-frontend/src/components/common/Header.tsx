@@ -168,6 +168,7 @@ export default function Header() {
       artist: item.artist,
       url: item.streamUrl,
       cover: item.coverPath ?? '',
+      mediaType: 1,
     }], 0);
     setOpen(false);
     setView('menu');
