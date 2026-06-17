@@ -143,7 +143,7 @@ public class MediaItemsController : ControllerBase
             ApiResponse<MediaDto>.SuccessResponse(result, "Upload successful"));
     }
 
-    // GET /api/mediaitems/{id}/stream — Range streaming (HTTP concern stays here)
+    // GET /api/mediaitems/{id}/stream 
     [HttpGet("{id:guid}/stream")]
     public async Task<IActionResult> Stream(Guid id, CancellationToken ct)
     {
@@ -160,38 +160,6 @@ public class MediaItemsController : ControllerBase
         var provider = new FileExtensionContentTypeProvider();
         if (!provider.TryGetContentType(physicalPath, out var contentType))
             contentType = "application/octet-stream";
-
-        var fileInfo   = new FileInfo(physicalPath);
-        var fileLength = fileInfo.Length;
-
-        if (Request.Headers.TryGetValue("Range", out var rangeHeader))
-        {
-            var rangeValue = rangeHeader.ToString().Replace("bytes=", "");
-            var rangeParts = rangeValue.Split('-');
-            long start = long.TryParse(rangeParts[0], out var s) ? s : 0;
-            long end   = rangeParts.Length > 1 && long.TryParse(rangeParts[1], out var e) ? e : fileLength - 1;
-
-            if (end >= fileLength) end = fileLength - 1;
-            var length = end - start + 1;
-
-            Response.StatusCode = 206;
-            Response.Headers.Append("Content-Range",  $"bytes {start}-{end}/{fileLength}");
-            Response.Headers.Append("Accept-Ranges",  "bytes");
-            Response.Headers.Append("Content-Length", length.ToString());
-            Response.ContentType = contentType;
-
-            using var fs = new FileStream(physicalPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            fs.Seek(start, SeekOrigin.Begin);
-            var buffer    = new byte[length];
-            var totalRead = 0;
-            while (totalRead < (int)length)
-            {
-                var read = await fs.ReadAsync(buffer.AsMemory(totalRead, (int)length - totalRead), ct);
-                if (read == 0) break;
-                totalRead += read;
-            }
-            return File(buffer, contentType);
-        }
 
         Response.Headers.Append("Accept-Ranges", "bytes");
         return PhysicalFile(physicalPath, contentType, enableRangeProcessing: true);

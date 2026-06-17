@@ -19,8 +19,8 @@ import { AuthProvider } from './contexts/AuthContext';
 function App() {
   return (
     <AuthProvider>
-      <MusicProvider>
-        <Router>
+      <Router>
+        <MusicProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -43,8 +43,8 @@ function App() {
               <Route path="/share/inbox" element={<ShareInbox />} />
             </Route>
           </Routes>
-        </Router>
-      </MusicProvider>
+        </MusicProvider>
+      </Router>
     </AuthProvider>
   );
 }

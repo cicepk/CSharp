@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useMusic } from '../hooks/MusicContext';
 import type { Song } from '../types';
 import ShareModal from '../components/ShareModal';
@@ -21,13 +20,11 @@ function TrackCard({ song, index, songs, width, onShare }: {
   onShare: (song: Song) => void;
 }) {
   const { currentSong, isPlaying, setQueue } = useMusic();
-  const navigate = useNavigate();
   const isActive = currentSong?.id === song.id;
   const [hovered, setHovered] = useState(false);
 
   const handleClick = () => {
     setQueue(songs, index);
-    if (song.mediaType === 2) navigate(`/video/${song.id}`);
   };
 
   return (

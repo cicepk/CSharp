@@ -62,28 +62,32 @@ public class DataSeeder : IDataSeeder
     private async Task InitializeDatabaseSchemaAsync()
     {
         Console.WriteLine(" 📋 Creating database schema...");
-        
-        // The assembly is loaded from: TuneVault.API/bin/Debug/net10.0/TuneVault.Infrastructure.dll
-        // We need to get to: TuneVault.Infrastructure/Database/schema.sql
-        // Start from assembly location: D:\tune_vault\CSharp\Back\TuneVault.API\bin\Debug\net10.0\
-        var assemblyLocation = System.Reflection.Assembly.GetExecutingAssembly().Location;
-        var binDir = System.IO.Path.GetDirectoryName(assemblyLocation);  // net10.0
-        
-        if (binDir == null)
-            throw new InvalidOperationException("Cannot determine assembly directory");
-        
-        // Navigate up: net10.0 -> Debug -> bin -> TuneVault.API -> Back
-        var backDir = binDir;
-        for (int i = 0; i < 4; i++)
+
+        // Look for schema.sql next to the running assembly first (Docker / published mode),
+        // then fall back to the dev-time directory navigation.
+        string schemaPath;
+        var appBase = AppContext.BaseDirectory;
+        var candidate = System.IO.Path.Combine(appBase, "schema.sql");
+        if (System.IO.File.Exists(candidate))
         {
-            backDir = System.IO.Path.GetDirectoryName(backDir);
-            if (backDir == null)
-                throw new InvalidOperationException("Cannot navigate to Back directory");
+            schemaPath = candidate;
         }
-        
-        // Now go into TuneVault.Infrastructure/Database
-        var schemaPath = System.IO.Path.Combine(backDir, "TuneVault.Infrastructure", "Database", "schema.sql");
-        schemaPath = System.IO.Path.GetFullPath(schemaPath);
+        else
+        {
+            var assemblyLocation = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            var binDir = System.IO.Path.GetDirectoryName(assemblyLocation);
+            if (binDir == null)
+                throw new InvalidOperationException("Cannot determine assembly directory");
+            var backDir = binDir;
+            for (int i = 0; i < 4; i++)
+            {
+                backDir = System.IO.Path.GetDirectoryName(backDir);
+                if (backDir == null)
+                    throw new InvalidOperationException("Cannot navigate to Back directory");
+            }
+            schemaPath = System.IO.Path.GetFullPath(
+                System.IO.Path.Combine(backDir, "TuneVault.Infrastructure", "Database", "schema.sql"));
+        }
 
         if (!System.IO.File.Exists(schemaPath))
         {

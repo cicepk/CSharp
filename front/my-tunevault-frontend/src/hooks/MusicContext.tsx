@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useRef, useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Song } from '../types';
 import apiService from '../services/ApiService';
 import { useAuth } from '../contexts/AuthContext';
@@ -45,6 +46,7 @@ interface MusicContextType {
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
 export function MusicProvider({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const lastRecordedIdRef = useRef<string | null>(null);
@@ -148,9 +150,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     setCurrentSong(song);
     setQueueIndex(index);
     if (song.mediaType === 2) {
-      // Video is rendered (and played) by the VideoPlayer page itself; just register it as current.
       if (audioRef.current) audioRef.current.pause();
       setIsPlaying(false);
+      navigate(`/video/${song.id}`);
     } else if (audioRef.current) {
       audioRef.current.src = song.url;
       audioRef.current.play();
@@ -160,7 +162,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       lastRecordedIdRef.current = song.id;
       apiService.recordPlay(song.id).catch(() => {});
     }
-  }, []);
+  }, [navigate]);
 
   const playSong = useCallback((song: Song) => {
     if (currentSong?.id === song.id && isPlaying) {
@@ -177,13 +179,14 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       if (song.mediaType === 2) {
         if (audioRef.current) audioRef.current.pause();
         setIsPlaying(false);
+        navigate(`/video/${song.id}`);
       } else if (audioRef.current) {
         audioRef.current.src = song.url;
         audioRef.current.play();
         setIsPlaying(true);
       }
     }
-  }, [currentSong?.id, isPlaying]);
+  }, [currentSong?.id, isPlaying, navigate]);
 
   // Đăng ký bài hiện tại khi vào trang /video/:id trực tiếp (vd. bookmark) — không qua setQueue
   const loadVideo = useCallback((song: Song) => {
