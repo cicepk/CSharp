@@ -143,7 +143,7 @@ public class MediaItemsController : ControllerBase
             ApiResponse<MediaDto>.SuccessResponse(result, "Upload successful"));
     }
 
-    // GET /api/mediaitems/{id}/stream — Range streaming handled by ASP.NET Core PhysicalFileResult
+    // GET /api/mediaitems/{id}/stream 
     [HttpGet("{id:guid}/stream")]
     public async Task<IActionResult> Stream(Guid id, CancellationToken ct)
     {
