@@ -1,0 +1,5 @@
+{
+  "dotnet": {
+    "publishCmd": "dotnet publish TuneVault.API/TuneVault.API.csproj -c Release -o out"
+  }
+}
