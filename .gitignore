@@ -482,6 +482,7 @@ $RECYCLE.BIN/
 *.swp
 
 appsettings.Development.json
+appsettings.Production.json
 Back/TuneVault.API/wwwroot/uploads/audio/
 Back/TuneVault.API/wwwroot/uploads/video/
 Back/TuneVault.API/wwwroot/uploads/covers/
