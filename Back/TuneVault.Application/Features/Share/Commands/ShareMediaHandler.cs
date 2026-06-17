@@ -12,17 +12,23 @@ namespace TuneVault.Application.Features.Share.Commands
         private readonly IUserRepository _userRepository;
         private readonly INotificationRepository _notificationRepository;
         private readonly INotificationPushService _pushService;
+        private readonly IMediaItemRepository _mediaItemRepository;
+        private readonly IPlaylistRepository _playlistRepository;
 
         public ShareMediaCommandHandler(
             IMediaShareRepository shareRepository,
             IUserRepository userRepository,
             INotificationRepository notificationRepository,
-            INotificationPushService pushService)
+            INotificationPushService pushService,
+            IMediaItemRepository mediaItemRepository,
+            IPlaylistRepository playlistRepository)
         {
             _shareRepository = shareRepository;
             _userRepository = userRepository;
             _notificationRepository = notificationRepository;
             _pushService = pushService;
+            _mediaItemRepository = mediaItemRepository;
+            _playlistRepository = playlistRepository;
         }
 
         public async Task<Guid> Handle(ShareMediaCommand command, CancellationToken cancellationToken)
@@ -78,7 +84,17 @@ namespace TuneVault.Application.Features.Share.Commands
             // 5. Tạo notification trong DB
             var sender = await _userRepository.GetByIdAsync(command.SenderId, cancellationToken);
             var senderName = sender?.UserName ?? "Ai đó";
-            var target = command.MediaItemId.HasValue ? "một bài hát" : "một playlist";
+            string target;
+            if (command.MediaItemId.HasValue)
+            {
+                var media = await _mediaItemRepository.GetByIdAsync(command.MediaItemId.Value, cancellationToken);
+                target = media != null ? $"\"{media.Title}\"" : "một bài hát";
+            }
+            else
+            {
+                var playlist = await _playlistRepository.GetByIdAsync(command.PlaylistId!.Value, cancellationToken);
+                target = playlist != null ? $"playlist \"{playlist.Name}\"" : "một playlist";
+            }
 
             var notification = new DomainNotification
             {
