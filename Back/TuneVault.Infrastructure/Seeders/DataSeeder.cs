@@ -1,5 +1,4 @@
 using Dapper;
-using Microsoft.AspNetCore.Hosting;
 using System.Data;
 using TuneVault.Application.Interfaces;
 using TuneVault.Infrastructure.Data;
@@ -9,69 +8,10 @@ namespace TuneVault.Infrastructure.Seeders;
 public class DataSeeder : IDataSeeder
 {
     private readonly ISqlConnectionFactory _connectionFactory;
-    private readonly IWebHostEnvironment _env;
 
-    // Fixed seed file definitions: (localFileName, downloadUrl, subFolder)
-    // Video files reuse the same small source video to cut download time
-    private static readonly (string Name, string Url, string Folder)[] SeedFiles =
-    [
-        ("seed-audio-01.mp3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",  "audio"),
-        ("seed-audio-02.mp3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",  "audio"),
-        ("seed-audio-03.mp3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",  "audio"),
-        ("seed-audio-04.mp3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",  "audio"),
-        ("seed-audio-05.mp3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",  "audio"),
-        ("seed-audio-06.mp3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",  "audio"),
-        ("seed-video-01.mp4", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4", "video"),
-        ("seed-video-02.mp4", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",    "video"),
-        ("seed-video-03.mp4", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",   "video"),
-        ("seed-video-04.mp4", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",  "video"),
-    ];
-
-    public DataSeeder(ISqlConnectionFactory connectionFactory, IWebHostEnvironment env)
+    public DataSeeder(ISqlConnectionFactory connectionFactory)
     {
         _connectionFactory = connectionFactory;
-        _env = env;
-    }
-
-    private string GetUploadsPath(string subFolder)
-    {
-        var wwwroot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-        return Path.Combine(wwwroot, "uploads", subFolder);
-    }
-
-    /// Download seed files from public URLs if they are missing (runs every startup)
-    private async Task EnsureSeedFilesAsync()
-    {
-        using var http = new HttpClient();
-        http.Timeout = TimeSpan.FromMinutes(3);
-
-        foreach (var (name, url, folder) in SeedFiles)
-        {
-            var dir  = GetUploadsPath(folder);
-            Directory.CreateDirectory(dir);
-            var dest = Path.Combine(dir, name);
-
-            if (File.Exists(dest))
-            {
-                Console.WriteLine($" Seed file exists: {name}");
-                continue;
-            }
-
-            Console.WriteLine($"   Downloading {name} ...");
-            try
-            {
-                using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-                response.EnsureSuccessStatusCode();
-                using var stream = await response.Content.ReadAsStreamAsync();
-                using var fs    = new FileStream(dest, FileMode.Create, FileAccess.Write);
-                await stream.CopyToAsync(fs);
-                Console.WriteLine($" Downloaded {name}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"  Failed to download {name}: {ex.Message}");
-            }
-        }
     }
 
     /// Check if UserProfiles table exists with proper schema
@@ -263,9 +203,6 @@ public class DataSeeder : IDataSeeder
     /// Thực hiện seeding tất cả dữ liệu
     public async Task SeedAsync()
     {
-        // Always ensure seed files exist (re-download if lost after container restart)
-        await EnsureSeedFilesAsync();
-
         // First ensure database schema is valid (recreate if schema is outdated)
         if (!await SchemaIsValidAsync())
         {
@@ -388,132 +325,97 @@ public class DataSeeder : IDataSeeder
         }
     }
 
-    /// 6 audio items + 4 video items
+    /// 10 audio items — files baked into Docker image under wwwroot/music/
     private async Task SeedMediaItemsAsync(IDbConnection connection, IDbTransaction transaction)
     {
         const string sql = @"
-            INSERT INTO MediaItems (Id, Title, Artist, FilePath, MediaType, DurationSeconds, CreatedAt, OwnerId)
-            VALUES (@Id, @Title, @Artist, @FilePath, @MediaType, @DurationSeconds, @CreatedAt, @OwnerId)";
+            INSERT INTO MediaItems (Id, Title, Artist, FilePath, CoverPath, MediaType, DurationSeconds, CreatedAt, OwnerId)
+            VALUES (@Id, @Title, @Artist, @FilePath, @CoverPath, @MediaType, @DurationSeconds, @CreatedAt, @OwnerId)";
 
-        // Admin user ID
         var adminId = new Guid("550e8400-e29b-41d4-a716-446655440001");
 
-        // Tạo list media items — FilePath khớp với file được download bởi EnsureSeedFilesAsync
         var mediaItems = new List<dynamic>
         {
-            // ===== AUDIO ITEMS (MediaType = 1) =====
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440001"),
-                Title = "Blinding Lights",
-                Artist = "The Weeknd",
-                FilePath = "/uploads/audio/seed-audio-01.mp3",
-                MediaType = 1,
-                DurationSeconds = 200,
-                CreatedAt = new DateTime(2026, 1, 10, 8, 0, 0),
-                OwnerId = adminId
+                Title = "I Can't Feel", Artist = "Aylex",
+                FilePath  = "/music/audio/Aylex - I Can't Feel (freetouse.com).mp3",
+                CoverPath = "/music/images/Black  Mixtape Cover  Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 180,
+                CreatedAt = new DateTime(2026, 1, 10, 8, 0, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440002"),
-                Title = "Shape of You",
-                Artist = "Ed Sheeran",
-                FilePath = "/uploads/audio/seed-audio-02.mp3",
-                MediaType = 1,
-                DurationSeconds = 234,
-                CreatedAt = new DateTime(2026, 1, 11, 9, 30, 0),
-                OwnerId = adminId
+                Title = "Turn It Louder", Artist = "Aylex",
+                FilePath  = "/music/audio/Aylex - Turn It Louder (freetouse.com).mp3",
+                CoverPath = "/music/images/Neon Music Album Cover Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 195,
+                CreatedAt = new DateTime(2026, 1, 11, 9, 30, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440003"),
-                Title = "Uptown Funk",
-                Artist = "Mark Ronson ft. Bruno Mars",
-                FilePath = "/uploads/audio/seed-audio-03.mp3",
-                MediaType = 1,
-                DurationSeconds = 269,
-                CreatedAt = new DateTime(2026, 1, 12, 10, 15, 0),
-                OwnerId = adminId
+                Title = "All Night", Artist = "Burgundy",
+                FilePath  = "/music/audio/Burgundy - All Night (freetouse.com).mp3",
+                CoverPath = "/music/images/Red Neon Music Album Cover Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 210,
+                CreatedAt = new DateTime(2026, 1, 12, 10, 15, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440004"),
-                Title = "Perfect",
-                Artist = "Ed Sheeran",
-                FilePath = "/uploads/audio/seed-audio-04.mp3",
-                MediaType = 1,
-                DurationSeconds = 263,
-                CreatedAt = new DateTime(2026, 1, 13, 11, 0, 0),
-                OwnerId = adminId
+                Title = "Clarity", Artist = "Damtaro",
+                FilePath  = "/music/audio/Damtaro - Clarity (freetouse.com).mp3",
+                CoverPath = "/music/images/Blue Inception Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 225,
+                CreatedAt = new DateTime(2026, 1, 13, 11, 0, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440005"),
-                Title = "Bohemian Rhapsody",
-                Artist = "Queen",
-                FilePath = "/uploads/audio/seed-audio-05.mp3",
-                MediaType = 1,
-                DurationSeconds = 354,
-                CreatedAt = new DateTime(2026, 1, 14, 12, 30, 0),
-                OwnerId = adminId
+                Title = "Wandering", Artist = "Epic Spectrum",
+                FilePath  = "/music/audio/Epic Spectrum - Wandering (freetouse.com).mp3",
+                CoverPath = "/music/images/Purple Abstract Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 240,
+                CreatedAt = new DateTime(2026, 1, 14, 12, 30, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440006"),
-                Title = "Hotel California",
-                Artist = "Eagles",
-                FilePath = "/uploads/audio/seed-audio-06.mp3",
-                MediaType = 1,
-                DurationSeconds = 391,
-                CreatedAt = new DateTime(2026, 1, 15, 13, 45, 0),
-                OwnerId = adminId
+                Title = "End of Times", Artist = "Guillermo Guareschi",
+                FilePath  = "/music/audio/Guillermo Guareschi - End of Times (freetouse.com).mp3",
+                CoverPath = "/music/images/Black Indie Rock Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 255,
+                CreatedAt = new DateTime(2026, 1, 15, 13, 45, 0), OwnerId = adminId
             },
-
-            // ===== VIDEO ITEMS (MediaType = 2) =====
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440007"),
-                Title = "Levitating - Official Music Video",
-                Artist = "Dua Lipa",
-                FilePath = "/uploads/video/seed-video-01.mp4",
-                MediaType = 2,
-                DurationSeconds = 15,
-                CreatedAt = new DateTime(2026, 1, 16, 14, 0, 0),
-                OwnerId = adminId
+                Title = "Memories", Artist = "Lukrembo",
+                FilePath  = "/music/audio/Lukrembo - Memories (freetouse.com).mp3",
+                CoverPath = "/music/images/Pink Modern  Minimal Music Album Cover Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 188,
+                CreatedAt = new DateTime(2026, 1, 16, 14, 0, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440008"),
-                Title = "As It Was - Live Performance",
-                Artist = "Harry Styles",
-                FilePath = "/uploads/video/seed-video-02.mp4",
-                MediaType = 2,
-                DurationSeconds = 15,
-                CreatedAt = new DateTime(2026, 1, 17, 15, 20, 0),
-                OwnerId = adminId
+                Title = "Kyoto", Artist = "Nebulite",
+                FilePath  = "/music/audio/Nebulite - Kyoto (freetouse.com).mp3",
+                CoverPath = "/music/images/Pop Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 202,
+                CreatedAt = new DateTime(2026, 1, 17, 15, 20, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440009"),
-                Title = "Setlist Concert 2025",
-                Artist = "Taylor Swift",
-                FilePath = "/uploads/video/seed-video-03.mp4",
-                MediaType = 2,
-                DurationSeconds = 15,
-                CreatedAt = new DateTime(2026, 1, 18, 16, 30, 0),
-                OwnerId = adminId
+                Title = "Deep Within", Artist = "Sunborn",
+                FilePath  = "/music/audio/Sunborn - Deep Within (freetouse.com).mp3",
+                CoverPath = "/music/images/Square abstract album cover template - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 218,
+                CreatedAt = new DateTime(2026, 1, 18, 16, 30, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440010"),
-                Title = "Making Of Album - Behind The Scenes",
-                Artist = "The Weeknd",
-                FilePath = "/uploads/video/seed-video-04.mp4",
-                MediaType = 2,
-                DurationSeconds = 15,
-                CreatedAt = new DateTime(2026, 1, 19, 17, 15, 0),
-                OwnerId = adminId
-            }
+                Title = "Final Scene", Artist = "Walen",
+                FilePath  = "/music/audio/Walen - Final Scene (freetouse.com).mp3",
+                CoverPath = "/music/images/Black Floral Illustrative Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 230,
+                CreatedAt = new DateTime(2026, 1, 19, 17, 15, 0), OwnerId = adminId
+            },
         };
 
         // Insert từng media item
