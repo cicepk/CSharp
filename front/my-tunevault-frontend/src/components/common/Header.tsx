@@ -7,7 +7,6 @@ import apiService from '../../services/ApiService';
 import { useSignalRNotifications } from '../../hooks/useSignalRNotifications';
 import bellImg from '../../assets/icons/notifications.png';
 import arrowLeftImg from '../../assets/icons/arrow_left.png';
-import chevronRightImg from '../../assets/icons/chevron_right.png';
 import UploadModal from '../UploadModal';
 import styles from './Header.module.css';
 
