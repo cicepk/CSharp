@@ -204,7 +204,7 @@ export default function Search() {
   );
 }
 
-function SongCard({ song, isActive, isPlaying, onPlay, onShare }: {
+function SongCard({ song, isActive, isPlaying: _isPlaying, onPlay, onShare }: {
   song: Song;
   isActive: boolean;
   isPlaying: boolean;
