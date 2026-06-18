@@ -1,4 +1,5 @@
 using Dapper;
+using Microsoft.AspNetCore.Hosting;
 using System.Data;
 using TuneVault.Application.Interfaces;
 using TuneVault.Infrastructure.Data;
@@ -8,10 +9,69 @@ namespace TuneVault.Infrastructure.Seeders;
 public class DataSeeder : IDataSeeder
 {
     private readonly ISqlConnectionFactory _connectionFactory;
+    private readonly IWebHostEnvironment _env;
 
-    public DataSeeder(ISqlConnectionFactory connectionFactory)
+    // Fixed seed file definitions: (localFileName, downloadUrl, subFolder)
+    // Video files reuse the same small source video to cut download time
+    private static readonly (string Name, string Url, string Folder)[] SeedFiles =
+    [
+        ("seed-audio-01.mp3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",  "audio"),
+        ("seed-audio-02.mp3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",  "audio"),
+        ("seed-audio-03.mp3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",  "audio"),
+        ("seed-audio-04.mp3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",  "audio"),
+        ("seed-audio-05.mp3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",  "audio"),
+        ("seed-audio-06.mp3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",  "audio"),
+        ("seed-video-01.mp4", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4", "video"),
+        ("seed-video-02.mp4", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",    "video"),
+        ("seed-video-03.mp4", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",   "video"),
+        ("seed-video-04.mp4", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",  "video"),
+    ];
+
+    public DataSeeder(ISqlConnectionFactory connectionFactory, IWebHostEnvironment env)
     {
         _connectionFactory = connectionFactory;
+        _env = env;
+    }
+
+    private string GetUploadsPath(string subFolder)
+    {
+        var wwwroot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+        return Path.Combine(wwwroot, "uploads", subFolder);
+    }
+
+    /// Download seed files from public URLs if they are missing (runs every startup)
+    private async Task EnsureSeedFilesAsync()
+    {
+        using var http = new HttpClient();
+        http.Timeout = TimeSpan.FromMinutes(3);
+
+        foreach (var (name, url, folder) in SeedFiles)
+        {
+            var dir  = GetUploadsPath(folder);
+            Directory.CreateDirectory(dir);
+            var dest = Path.Combine(dir, name);
+
+            if (File.Exists(dest))
+            {
+                Console.WriteLine($" Seed file exists: {name}");
+                continue;
+            }
+
+            Console.WriteLine($"   Downloading {name} ...");
+            try
+            {
+                using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                response.EnsureSuccessStatusCode();
+                using var stream = await response.Content.ReadAsStreamAsync();
+                using var fs    = new FileStream(dest, FileMode.Create, FileAccess.Write);
+                await stream.CopyToAsync(fs);
+                Console.WriteLine($" Downloaded {name}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  Failed to download {name}: {ex.Message}");
+            }
+        }
     }
 
     /// Check if UserProfiles table exists with proper schema
@@ -203,6 +263,9 @@ public class DataSeeder : IDataSeeder
     /// Thực hiện seeding tất cả dữ liệu
     public async Task SeedAsync()
     {
+        // Always ensure seed files exist (re-download if lost after container restart)
+        await EnsureSeedFilesAsync();
+
         // First ensure database schema is valid (recreate if schema is outdated)
         if (!await SchemaIsValidAsync())
         {
@@ -335,7 +398,7 @@ public class DataSeeder : IDataSeeder
         // Admin user ID
         var adminId = new Guid("550e8400-e29b-41d4-a716-446655440001");
 
-        // Tạo list media items
+        // Tạo list media items — FilePath khớp với file được download bởi EnsureSeedFilesAsync
         var mediaItems = new List<dynamic>
         {
             // ===== AUDIO ITEMS (MediaType = 1) =====
@@ -344,8 +407,8 @@ public class DataSeeder : IDataSeeder
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440001"),
                 Title = "Blinding Lights",
                 Artist = "The Weeknd",
-                FilePath = "/music/audio/blinding-lights.mp3",
-                MediaType = 1,  // Audio
+                FilePath = "/uploads/audio/seed-audio-01.mp3",
+                MediaType = 1,
                 DurationSeconds = 200,
                 CreatedAt = new DateTime(2026, 1, 10, 8, 0, 0),
                 OwnerId = adminId
@@ -355,7 +418,7 @@ public class DataSeeder : IDataSeeder
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440002"),
                 Title = "Shape of You",
                 Artist = "Ed Sheeran",
-                FilePath = "/music/audio/shape-of-you.mp3",
+                FilePath = "/uploads/audio/seed-audio-02.mp3",
                 MediaType = 1,
                 DurationSeconds = 234,
                 CreatedAt = new DateTime(2026, 1, 11, 9, 30, 0),
@@ -366,7 +429,7 @@ public class DataSeeder : IDataSeeder
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440003"),
                 Title = "Uptown Funk",
                 Artist = "Mark Ronson ft. Bruno Mars",
-                FilePath = "/music/audio/uptown-funk.mp3",
+                FilePath = "/uploads/audio/seed-audio-03.mp3",
                 MediaType = 1,
                 DurationSeconds = 269,
                 CreatedAt = new DateTime(2026, 1, 12, 10, 15, 0),
@@ -377,7 +440,7 @@ public class DataSeeder : IDataSeeder
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440004"),
                 Title = "Perfect",
                 Artist = "Ed Sheeran",
-                FilePath = "/music/audio/perfect.mp3",
+                FilePath = "/uploads/audio/seed-audio-04.mp3",
                 MediaType = 1,
                 DurationSeconds = 263,
                 CreatedAt = new DateTime(2026, 1, 13, 11, 0, 0),
@@ -388,7 +451,7 @@ public class DataSeeder : IDataSeeder
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440005"),
                 Title = "Bohemian Rhapsody",
                 Artist = "Queen",
-                FilePath = "/music/audio/bohemian-rhapsody.mp3",
+                FilePath = "/uploads/audio/seed-audio-05.mp3",
                 MediaType = 1,
                 DurationSeconds = 354,
                 CreatedAt = new DateTime(2026, 1, 14, 12, 30, 0),
@@ -399,7 +462,7 @@ public class DataSeeder : IDataSeeder
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440006"),
                 Title = "Hotel California",
                 Artist = "Eagles",
-                FilePath = "/music/audio/hotel-california.mp3",
+                FilePath = "/uploads/audio/seed-audio-06.mp3",
                 MediaType = 1,
                 DurationSeconds = 391,
                 CreatedAt = new DateTime(2026, 1, 15, 13, 45, 0),
@@ -412,9 +475,9 @@ public class DataSeeder : IDataSeeder
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440007"),
                 Title = "Levitating - Official Music Video",
                 Artist = "Dua Lipa",
-                FilePath = "/music/video/levitating-mv.mp4",
-                MediaType = 2,  // Video
-                DurationSeconds = 203,
+                FilePath = "/uploads/video/seed-video-01.mp4",
+                MediaType = 2,
+                DurationSeconds = 15,
                 CreatedAt = new DateTime(2026, 1, 16, 14, 0, 0),
                 OwnerId = adminId
             },
@@ -423,9 +486,9 @@ public class DataSeeder : IDataSeeder
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440008"),
                 Title = "As It Was - Live Performance",
                 Artist = "Harry Styles",
-                FilePath = "/music/video/as-it-was-live.mp4",
+                FilePath = "/uploads/video/seed-video-02.mp4",
                 MediaType = 2,
-                DurationSeconds = 180,
+                DurationSeconds = 15,
                 CreatedAt = new DateTime(2026, 1, 17, 15, 20, 0),
                 OwnerId = adminId
             },
@@ -434,9 +497,9 @@ public class DataSeeder : IDataSeeder
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440009"),
                 Title = "Setlist Concert 2025",
                 Artist = "Taylor Swift",
-                FilePath = "/music/video/taylor-concert-2025.mp4",
+                FilePath = "/uploads/video/seed-video-03.mp4",
                 MediaType = 2,
-                DurationSeconds = 5400,
+                DurationSeconds = 15,
                 CreatedAt = new DateTime(2026, 1, 18, 16, 30, 0),
                 OwnerId = adminId
             },
@@ -445,9 +508,9 @@ public class DataSeeder : IDataSeeder
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440010"),
                 Title = "Making Of Album - Behind The Scenes",
                 Artist = "The Weeknd",
-                FilePath = "/music/video/weeknd-bts.mp4",
+                FilePath = "/uploads/video/seed-video-04.mp4",
                 MediaType = 2,
-                DurationSeconds = 720,
+                DurationSeconds = 15,
                 CreatedAt = new DateTime(2026, 1, 19, 17, 15, 0),
                 OwnerId = adminId
             }
