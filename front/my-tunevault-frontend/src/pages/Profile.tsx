@@ -270,15 +270,3 @@ export default function Profile() {
     </div>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  padding: '10px 12px',
-  backgroundColor: '#3e3e3e',
-  border: '1px solid #535353',
-  borderRadius: '4px',
-  color: '#fff',
-  fontSize: '0.9rem',
-  outline: 'none',
-  width: '100%',
-  boxSizing: 'border-box',
-};

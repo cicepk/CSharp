@@ -123,15 +123,6 @@ export default function UserPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div>
-      <p style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#fff' }}>{value.toLocaleString()}</p>
-      <p style={{ margin: 0, fontSize: '0.72rem', color: '#b3b3b3' }}>{label}</p>
-    </div>
-  );
-}
-
 function PlaylistCard({ playlist, onPlay, onShare, onNavigate }: {
   playlist: Playlist;
   onPlay: () => void;

@@ -283,18 +283,3 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
     </div>
   );
 }
-
-function fieldStyle(disabled: boolean): React.CSSProperties {
-  return {
-    padding: '10px 12px',
-    backgroundColor: '#3e3e3e',
-    border: '1px solid #535353',
-    borderRadius: '6px',
-    color: disabled ? '#b3b3b3' : '#fff',
-    fontSize: '0.875rem',
-    outline: 'none',
-    width: '100%',
-    boxSizing: 'border-box',
-    opacity: disabled ? 0.6 : 1,
-  };
-}

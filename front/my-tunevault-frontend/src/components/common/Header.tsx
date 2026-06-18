@@ -309,33 +309,3 @@ export default function Header() {
     </>
   );
 }
-
-function MenuItem({
-  label, onClick, hasArrow = false, danger = false,
-}: {
-  label: string;
-  onClick: () => void;
-  hasArrow?: boolean;
-  danger?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        width: '100%', padding: '10px 14px',
-        background: 'none', border: 'none',
-        color: danger ? '#ff6b6b' : '#fff',
-        fontSize: '0.875rem', cursor: 'pointer',
-        textAlign: 'left', transition: 'background 0.15s',
-      }}
-      onMouseEnter={(e) => e.currentTarget.style.background = '#3e3e3e'}
-      onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-    >
-      {label}
-      {hasArrow && (
-        <img src={chevronRightImg} alt="" style={{ width: '12px', height: '12px', opacity: 0.5 }} />
-      )}
-    </button>
-  );
-}
