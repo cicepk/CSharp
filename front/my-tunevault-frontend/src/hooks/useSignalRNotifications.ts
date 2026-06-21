@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import * as signalR from '@microsoft/signalr';
 import type { NotificationItem } from '../types';
 
-const HUB_URL = 'http://localhost:5067/notification-hub';
+const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5067/api').replace(/\/api.*$/, '');
+const HUB_URL = `${API_ORIGIN}/notification-hub`;
 
 export function useSignalRNotifications(
   isAuthenticated: boolean,

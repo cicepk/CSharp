@@ -23,8 +23,9 @@ builder.Services.AddSignalR();
 builder.Services.AddScoped<INotificationPushService, SignalRNotificationService>();
 
 // --- JWT Authentication (+ query string cho SignalR WebSocket) ---
-var jwtKey = builder.Configuration["Jwt:SecretKey"]
-    ?? throw new InvalidOperationException("Jwt:SecretKey is not configured");
+var jwtKey = builder.Configuration["Jwt:SecretKey"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+    throw new InvalidOperationException("Jwt:SecretKey is not configured. Set Jwt__SecretKey environment variable.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
