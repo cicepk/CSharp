@@ -40,7 +40,7 @@ public class UploadMediaHandler : IRequestHandler<UploadMediaCommand, MediaDto>
             DurationSeconds = mediaItem.DurationSeconds,
             OwnerId         = mediaItem.OwnerId,
             FilePath        = $"{command.BaseUrl}/api/mediaitems/{mediaItem.Id}/stream",
-            CoverPath       = mediaItem.CoverPath != null ? $"{command.BaseUrl}{mediaItem.CoverPath}" : null,
+            CoverPath       = mediaItem.CoverPath != null ? (mediaItem.CoverPath.StartsWith("http") ? mediaItem.CoverPath : $"{command.BaseUrl}{mediaItem.CoverPath}") : null,
             CreatedAt       = mediaItem.CreatedAt
         };
     }
