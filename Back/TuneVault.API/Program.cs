@@ -70,7 +70,8 @@ builder.Services.AddCors(options =>
     {
         policy.SetIsOriginAllowed(origin =>
                   allowedOrigins.Contains(origin) ||
-                  new Uri(origin).Host.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase))
+                  (Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
+                   uri.Host.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase)))
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
