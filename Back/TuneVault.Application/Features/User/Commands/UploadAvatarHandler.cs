@@ -20,7 +20,7 @@ public class UploadAvatarHandler : IRequestHandler<UploadAvatarCommand, string>
         if (user == null)
             throw new KeyNotFoundException("User not found");
 
-        _fileStorageService.Delete(command.OldAvatarPath);
+        await _fileStorageService.DeleteAsync(command.OldAvatarPath, cancellationToken);
 
         user.AvatarPath = command.NewAvatarPath;
         await _userRepository.UpdateAsync(user, cancellationToken);

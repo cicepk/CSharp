@@ -143,16 +143,19 @@ public class MediaItemsController : ControllerBase
             ApiResponse<MediaDto>.SuccessResponse(result, "Upload successful"));
     }
 
-    // GET /api/mediaitems/{id}/stream 
+    // GET /api/mediaitems/{id}/stream
     [HttpGet("{id:guid}/stream")]
     public async Task<IActionResult> Stream(Guid id, CancellationToken ct)
     {
-        var relativePath = await _mediator.Send(new GetMediaFilePathQuery { Id = id }, ct);
-        if (relativePath == null)
+        var filePath = await _mediator.Send(new GetMediaFilePathQuery { Id = id }, ct);
+        if (filePath == null)
             return NotFound(ApiResponse<object>.ErrorResponse("Media not found"));
 
-        var wwwroot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-        var physicalPath = Path.Combine(wwwroot, relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+        if (filePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            return Redirect(filePath);
+
+        var wwwroot      = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+        var physicalPath = Path.Combine(wwwroot, filePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
 
         if (!System.IO.File.Exists(physicalPath))
             return NotFound(ApiResponse<object>.ErrorResponse("File not found on server"));

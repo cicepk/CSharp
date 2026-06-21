@@ -28,8 +28,8 @@ public class DeleteMediaHandler : IRequestHandler<DeleteMediaCommand, bool>
 
         await _mediaItemRepository.DeleteAsync(command.Id, cancellationToken);
 
-        _fileStorageService.Delete(filePath);
-        _fileStorageService.Delete(coverPath);
+        await _fileStorageService.DeleteAsync(filePath, cancellationToken);
+        await _fileStorageService.DeleteAsync(coverPath, cancellationToken);
 
         return true;
     }
