@@ -236,7 +236,7 @@ public class DataSeeder : IDataSeeder
 
                         // Seed media items
                         await SeedMediaItemsAsync(connection, transaction);
-                        Console.WriteLine(" Seed 10 media items (6 audio + 4 video) thành công");
+                        Console.WriteLine(" Seed 13 media items (10 audio + 3 video) thành công");
 
                         // Seed playlists
                         await SeedPlaylistsAsync(connection, transaction);
@@ -415,6 +415,31 @@ public class DataSeeder : IDataSeeder
                 CoverPath = "/music/images/Black Floral Illustrative Album Cover - Made with PosterMyWall.jpg",
                 MediaType = 1, DurationSeconds = 230,
                 CreatedAt = new DateTime(2026, 1, 19, 17, 15, 0), OwnerId = adminId
+            },
+            // --- Video items ---
+            new {
+                Id = new Guid("660e8400-e29b-41d4-a716-446655440011"),
+                Title = "Here With Me", Artist = "d4vd",
+                FilePath  = "/music/video/d4vd - Here With Me .mp4",
+                CoverPath = "/music/images/here with me.png",
+                MediaType = 2, DurationSeconds = 225,
+                CreatedAt = new DateTime(2026, 1, 20, 10, 0, 0), OwnerId = adminId
+            },
+            new {
+                Id = new Guid("660e8400-e29b-41d4-a716-446655440012"),
+                Title = "Die With A Smile", Artist = "Lady Gaga, Bruno Mars",
+                FilePath  = "/music/video/Lady Gaga, Bruno Mars - Die With A Smile.mp4",
+                CoverPath = "/music/images/die with a smile.png",
+                MediaType = 2, DurationSeconds = 253,
+                CreatedAt = new DateTime(2026, 1, 20, 10, 30, 0), OwnerId = adminId
+            },
+            new {
+                Id = new Guid("660e8400-e29b-41d4-a716-446655440013"),
+                Title = "Blank Space", Artist = "Taylor Swift",
+                FilePath  = "/music/video/Taylor Swift - Blank Space.mp4",
+                CoverPath = "/music/images/Taylor_Swift_-_Blank_Space.png",
+                MediaType = 2, DurationSeconds = 231,
+                CreatedAt = new DateTime(2026, 1, 20, 11, 0, 0), OwnerId = adminId
             },
         };
 
