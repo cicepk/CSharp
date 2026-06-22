@@ -29,7 +29,7 @@ public class GetUserByIdHandler : IRequestHandler<GetUserByIdQuery, UserDto>
             Id             = user.Id,
             Username       = user.UserName,
             Bio            = user.Bio,
-            AvatarUrl      = user.AvatarPath != null ? $"{request.BaseUrl}{user.AvatarPath}" : null,
+            AvatarUrl      = user.AvatarPath != null ? (user.AvatarPath.StartsWith("http") ? user.AvatarPath : $"{request.BaseUrl}{user.AvatarPath}") : null,
             FollowerCount  = followerCount,
             FollowingCount = followingCount,
             CreatedAt      = user.CreatedAt

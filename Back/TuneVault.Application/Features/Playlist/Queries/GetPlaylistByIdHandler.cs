@@ -35,7 +35,7 @@ public class GetPlaylistByIdHandler : IRequestHandler<GetPlaylistByIdQuery, Play
             DurationSeconds = t.DurationSeconds,
             OwnerId         = t.OwnerId,
             FilePath        = $"{request.BaseUrl}/api/mediaitems/{t.Id}/stream",
-            CoverPath       = t.CoverPath != null ? $"{request.BaseUrl}{t.CoverPath}" : null,
+            CoverPath       = t.CoverPath != null ? (t.CoverPath.StartsWith("http") ? t.CoverPath : $"{request.BaseUrl}{t.CoverPath}") : null,
             CreatedAt       = t.CreatedAt
         }).ToList();
 
@@ -46,7 +46,7 @@ public class GetPlaylistByIdHandler : IRequestHandler<GetPlaylistByIdQuery, Play
             IsPublic   = playlist.isPublic,
             OwnerId    = playlist.OwnerId,
             TrackCount = tracks.Count,
-            CoverUrl   = firstCover != null ? $"{request.BaseUrl}{firstCover}" : null,
+            CoverUrl   = firstCover != null ? (firstCover.StartsWith("http") ? firstCover : $"{request.BaseUrl}{firstCover}") : null,
             CreatedAt  = playlist.CreatedAt,
             Tracks     = trackDtos
         };

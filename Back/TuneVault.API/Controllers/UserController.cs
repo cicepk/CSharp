@@ -119,7 +119,7 @@ public class UserController : ControllerBase
 
         return Ok(ApiResponse<object>.SuccessResponse(new
         {
-            avatarUrl = $"{BaseUrl}{avatarUrl}"
+            avatarUrl = avatarUrl.StartsWith("http") ? avatarUrl : $"{BaseUrl}{avatarUrl}"
         }, "Avatar updated"));
     }
 }
