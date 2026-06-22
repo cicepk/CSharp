@@ -27,6 +27,9 @@ public class MediaDto
     // ID của chủ sở hữu (người upload)
     public Guid OwnerId { get; set; }
 
+    // Username của người upload
+    public string? OwnerUsername { get; set; }
+
     /// <summary>
     /// URL để stream/download file (/api/media/{id}/stream)
     /// Frontend set vào <audio src> hoặc <video src>

@@ -15,9 +15,12 @@ public class MediaItemRepository : IMediaItemRepository
 
     public async Task<IReadOnlyList<MediaItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
+        // left join de tranh ambigous column OwnerId (cung ten)
         const string sql = @"
-            SELECT Id, Title, Artist, FilePath, CoverPath, MediaType, DurationSeconds, CreatedAt, OwnerId
-            FROM MediaItems";
+            SELECT m.Id, m.Title, m.Artist, m.FilePath, m.CoverPath, m.MediaType, m.DurationSeconds, m.CreatedAt, m.OwnerId,
+                   u.UserName AS OwnerUsername
+            FROM MediaItems m
+            LEFT JOIN UserProfiles u ON u.Id = m.OwnerId";
 
         using (var connection = _connectionFactory.CreateConnection())
         {
@@ -30,9 +33,11 @@ public class MediaItemRepository : IMediaItemRepository
     public async Task<MediaItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            SELECT Id, Title, Artist, FilePath, CoverPath, MediaType, DurationSeconds, CreatedAt, OwnerId
-            FROM MediaItems
-            WHERE Id = @Id";
+            SELECT m.Id, m.Title, m.Artist, m.FilePath, m.CoverPath, m.MediaType, m.DurationSeconds, m.CreatedAt, m.OwnerId,
+                   u.UserName AS OwnerUsername
+            FROM MediaItems m
+            LEFT JOIN UserProfiles u ON u.Id = m.OwnerId
+            WHERE m.Id = @Id";
 
         using (var connection = _connectionFactory.CreateConnection())
         {
