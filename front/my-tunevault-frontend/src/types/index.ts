@@ -5,6 +5,7 @@ export interface Song {
   cover: string;
   url: string;
   mediaType: number; // 1=Audio, 2=Video
+  ownerUsername?: string;
 }
 
 export interface Playlist {

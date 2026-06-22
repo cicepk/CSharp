@@ -32,6 +32,10 @@ export default function NowPlayingPanel() {
             <p className={styles.aboutName}>{currentSong.artist}</p>
 
             <p className={styles.aboutText}>Creative Commons artist</p>
+
+            {currentSong.ownerUsername && (
+              <p className={styles.aboutText}>Uploaded by <span style={{ color: '#1db954' }}>@{currentSong.ownerUsername}</span></p>
+            )}
           </>
         ) : (
           <p className={styles.placeholder}>Play a track to see artist info</p>

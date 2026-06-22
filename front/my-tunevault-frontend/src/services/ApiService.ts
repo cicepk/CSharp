@@ -24,6 +24,7 @@ interface RawMediaItem {
   coverPath?: string;
   durationSeconds: number;
   mediaType: number;
+  ownerUsername?: string;
 }
 
 interface RawPlaylist {
@@ -61,6 +62,7 @@ function toSong(item: RawMediaItem): Song {
     url: absoluteUrl(item.filePath),
     cover: absoluteUrl(item.coverPath ?? ''),
     mediaType: item.mediaType,
+    ownerUsername: item.ownerUsername,
   };
 }
 
