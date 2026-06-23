@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import apiService from '../services/ApiService';
 import styles from './UploadModal.module.css';
 
@@ -34,6 +34,20 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
+  const [genres, setGenres] = useState<{ id: string; name: string }[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+
+  useEffect(() => {
+    apiService.getGenres().then(setGenres);
+  }, []);
+
+  const toggleGenre = (id: string) => {
+    setSelectedGenres(prev =>
+      prev.includes(id)
+        ? prev.filter(g => g !== id)
+        : prev.length < 3 ? [...prev, id] : prev
+    );
+  };
 
   const mediaInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -85,6 +99,7 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
         mediaType,
         coverFile ?? undefined,
         setProgress,
+        selectedGenres,
       );
       setDone(true);
       setTimeout(() => { onUploaded(); onClose(); }, 1200);
@@ -233,6 +248,39 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
                   className={`${styles.inputField} ${uploading ? styles.disabled : ''}`}
                 />
               </div>
+
+              {/* Genre picker */}
+              {genres.length > 0 && (
+                <div>
+                  <p style={{ margin: '0 0 8px', fontSize: '0.8rem', color: '#b3b3b3' }}>
+                    Genres <span style={{ color: '#535353' }}>(chọn tối đa 3)</span>
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {genres.map(g => (
+                      <button
+                        key={g.id}
+                        type="button"
+                        disabled={uploading}
+                        onClick={() => toggleGenre(g.id)}
+                        style={{
+                          padding: '4px 14px',
+                          borderRadius: '20px',
+                          border: '1px solid',
+                          fontSize: '0.78rem',
+                          fontWeight: 500,
+                          cursor: uploading ? 'default' : 'pointer',
+                          transition: 'all 0.15s',
+                          backgroundColor: selectedGenres.includes(g.id) ? '#1db954' : 'transparent',
+                          borderColor: selectedGenres.includes(g.id) ? '#1db954' : '#535353',
+                          color: selectedGenres.includes(g.id) ? '#000' : '#b3b3b3',
+                        }}
+                      >
+                        {g.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Media type toggle */}
               <div className={styles.mediaTypeGroup}>

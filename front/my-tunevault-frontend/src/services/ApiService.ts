@@ -168,13 +168,20 @@ class ApiService {
     });
   }
 
+  async getGenres(): Promise<{ id: string; name: string }[]> {
+    const res = await fetch(`${API_BASE_URL}/genre`);
+    if (!res.ok) return [];
+    return res.json();
+  }
+
   async uploadMedia(
     file: File,
     title: string,
     artist: string,
     mediaType: 1 | 2,
     cover?: File,
-    onProgress?: (percent: number) => void
+    onProgress?: (percent: number) => void,
+    genreIds: string[] = []
   ): Promise<Song> {
     const token = localStorage.getItem('auth_token');
     const formData = new FormData();
@@ -183,6 +190,7 @@ class ApiService {
     formData.append('artist', artist);
     formData.append('mediaType', String(mediaType));
     if (cover) formData.append('cover', cover);
+    genreIds.forEach(id => formData.append('genreIds', id));
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
