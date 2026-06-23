@@ -151,6 +151,21 @@ public class UserRepository : IUserRepository
         }
     }
 
+    public async Task<bool> UpdatePasswordHashAsync(Guid userId, string newPasswordHash, CancellationToken cancellationToken = default)
+    {
+        const string sql = @"
+            UPDATE UserProfiles
+            SET PasswordHash = @PasswordHash
+            WHERE Id = @Id";
+
+        using (var connection = _connectionFactory.CreateConnection())
+        {
+            var command = new CommandDefinition(sql, new { Id = userId, PasswordHash = newPasswordHash }, cancellationToken: cancellationToken);
+            var affected = await connection.ExecuteAsync(command);
+            return affected > 0;
+        }
+    }
+
     public async Task<IReadOnlyList<UserProfile>> SearchAsync(string query, int limit = 10, CancellationToken cancellationToken = default)
     {
         const string sql = @"

@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TuneVault.Application.DTOs.Common;
 using TuneVault.Application.DTOs.User;
+using TuneVault.Application.DTOs.Auth;
+using TuneVault.Application.Features.Auth.Commands;
 using TuneVault.Application.Features.User.Commands;
 using TuneVault.Application.Features.User.Queries;
 using TuneVault.Application.Interfaces;
@@ -81,6 +83,21 @@ public class UserController : ControllerBase
         }, ct);
 
         return Ok(ApiResponse<List<UserSearchResultDto>>.SuccessResponse(result));
+    }
+
+    // PUT /api/user/me/password
+    [HttpPut("me/password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
+    {
+        await _mediator.Send(new ChangePasswordCommand
+        {
+            UserId          = GetCurrentUserId(),
+            CurrentPassword = request.CurrentPassword,
+            NewPassword     = request.NewPassword
+        }, ct);
+
+        return Ok(ApiResponse<object>.SuccessResponse(null, "Password changed successfully"));
     }
 
     // POST /api/user/me/avatar
