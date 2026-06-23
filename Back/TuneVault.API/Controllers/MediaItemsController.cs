@@ -136,7 +136,8 @@ public class MediaItemsController : ControllerBase
             FilePath  = filePath,
             CoverPath = coverPath,
             OwnerId   = GetCurrentUserId(),
-            BaseUrl   = BaseUrl
+            BaseUrl   = BaseUrl,
+            GenreIds  = request.GenreIds ?? new List<Guid>()
         }, ct);
 
         return CreatedAtAction(nameof(GetById), new { id = result.Id },

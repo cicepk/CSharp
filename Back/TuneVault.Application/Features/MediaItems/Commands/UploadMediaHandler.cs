@@ -31,6 +31,9 @@ public class UploadMediaHandler : IRequestHandler<UploadMediaCommand, MediaDto>
 
         await _mediaItemRepository.AddAsync(mediaItem, cancellationToken);
 
+        foreach (var genreId in command.GenreIds)
+            await _mediaItemRepository.AddMediaGenreAsync(mediaItem.Id, genreId, cancellationToken);
+
         return new MediaDto
         {
             Id              = mediaItem.Id,

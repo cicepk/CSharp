@@ -141,6 +141,18 @@ public class MediaItemRepository : IMediaItemRepository
         }
     }
 
+    public async Task<IReadOnlyList<Genre>> GetAllGenresAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = "SELECT Id, Name, Description FROM Genres ORDER BY Name";
+
+        using (var connection = _connectionFactory.CreateConnection())
+        {
+            var command = new CommandDefinition(sql, cancellationToken: cancellationToken);
+            var genres = await connection.QueryAsync<Genre>(command);
+            return genres.ToList();
+        }
+    }
+
     public async Task<IReadOnlyList<Genre>> GetGenresByMediaItemIdAsync(Guid mediaItemId, CancellationToken cancellationToken = default)
     {
         const string sql = @"

@@ -238,6 +238,14 @@ public class DataSeeder : IDataSeeder
                         await SeedMediaItemsAsync(connection, transaction);
                         Console.WriteLine(" Seed 13 media items (10 audio + 3 video) thành công");
 
+                        // Seed genres
+                        await SeedGenresAsync(connection, transaction);
+                        Console.WriteLine(" Seed 8 genres thành công");
+
+                        // Seed media-genre links
+                        await SeedMediaGenresAsync(connection, transaction);
+                        Console.WriteLine(" Seed 26 media-genre links thành công");
+
                         // Seed playlists
                         await SeedPlaylistsAsync(connection, transaction);
                         Console.WriteLine(" Seed 2 playlists thành công");
@@ -668,6 +676,102 @@ public class DataSeeder : IDataSeeder
         foreach (var notification in notifications)
         {
             var command = new CommandDefinition(sql, notification, transaction: transaction);
+            await connection.ExecuteAsync(command);
+        }
+    }
+
+    /// Seed 8 genres
+    private async Task SeedGenresAsync(IDbConnection connection, IDbTransaction transaction)
+    {
+        const string sql = @"
+            INSERT INTO Genres (Id, Name, Description)
+            VALUES (@Id, @Name, @Description)";
+
+        var genres = new List<dynamic>
+        {
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440001"), Name = "Pop",        Description = "Popular music" },
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440002"), Name = "Electronic", Description = "Electronic / synth music" },
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440003"), Name = "Indie",      Description = "Independent artists" },
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440004"), Name = "Chill",      Description = "Relaxing, lo-fi vibes" },
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440005"), Name = "Rock",       Description = "Rock music" },
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440006"), Name = "R&B",        Description = "Rhythm and Blues" },
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440007"), Name = "Lo-fi",      Description = "Lo-fi hip hop beats" },
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440008"), Name = "Cinematic",  Description = "Epic, orchestral, film music" },
+        };
+
+        foreach (var genre in genres)
+        {
+            var command = new CommandDefinition(sql, genre, transaction: transaction);
+            await connection.ExecuteAsync(command);
+        }
+    }
+
+    /// Seed genre assignments cho 13 media items (26 links)
+    private async Task SeedMediaGenresAsync(IDbConnection connection, IDbTransaction transaction)
+    {
+        const string sql = @"
+            INSERT INTO MediaGenres (MediaItemId, GenreId, AddedAt)
+            VALUES (@MediaItemId, @GenreId, @AddedAt)";
+
+        // Genre GUIDs
+        var pop        = new Guid("aa0e8400-e29b-41d4-a716-446655440001");
+        var electronic = new Guid("aa0e8400-e29b-41d4-a716-446655440002");
+        var indie      = new Guid("aa0e8400-e29b-41d4-a716-446655440003");
+        var chill      = new Guid("aa0e8400-e29b-41d4-a716-446655440004");
+        var rock       = new Guid("aa0e8400-e29b-41d4-a716-446655440005");
+        var rnb        = new Guid("aa0e8400-e29b-41d4-a716-446655440006");
+        var lofi       = new Guid("aa0e8400-e29b-41d4-a716-446655440007");
+        var cinematic  = new Guid("aa0e8400-e29b-41d4-a716-446655440008");
+
+        var addedAt = new DateTime(2026, 1, 10, 8, 0, 0);
+
+        var links = new List<(Guid mediaId, Guid genreId)>
+        {
+            // 001 "I Can't Feel" — Electronic, Chill
+            (new Guid("660e8400-e29b-41d4-a716-446655440001"), electronic),
+            (new Guid("660e8400-e29b-41d4-a716-446655440001"), chill),
+            // 002 "Turn It Louder" — Electronic, Pop
+            (new Guid("660e8400-e29b-41d4-a716-446655440002"), electronic),
+            (new Guid("660e8400-e29b-41d4-a716-446655440002"), pop),
+            // 003 "All Night" — Pop, R&B
+            (new Guid("660e8400-e29b-41d4-a716-446655440003"), pop),
+            (new Guid("660e8400-e29b-41d4-a716-446655440003"), rnb),
+            // 004 "Clarity" — Electronic, Chill
+            (new Guid("660e8400-e29b-41d4-a716-446655440004"), electronic),
+            (new Guid("660e8400-e29b-41d4-a716-446655440004"), chill),
+            // 005 "Wandering" — Electronic, Indie
+            (new Guid("660e8400-e29b-41d4-a716-446655440005"), electronic),
+            (new Guid("660e8400-e29b-41d4-a716-446655440005"), indie),
+            // 006 "End of Times" — Rock, Cinematic
+            (new Guid("660e8400-e29b-41d4-a716-446655440006"), rock),
+            (new Guid("660e8400-e29b-41d4-a716-446655440006"), cinematic),
+            // 007 "Memories" — Chill, Lo-fi
+            (new Guid("660e8400-e29b-41d4-a716-446655440007"), chill),
+            (new Guid("660e8400-e29b-41d4-a716-446655440007"), lofi),
+            // 008 "Kyoto" — Electronic, Pop
+            (new Guid("660e8400-e29b-41d4-a716-446655440008"), electronic),
+            (new Guid("660e8400-e29b-41d4-a716-446655440008"), pop),
+            // 009 "Deep Within" — Electronic, Chill
+            (new Guid("660e8400-e29b-41d4-a716-446655440009"), electronic),
+            (new Guid("660e8400-e29b-41d4-a716-446655440009"), chill),
+            // 010 "Final Scene" — Indie, Cinematic
+            (new Guid("660e8400-e29b-41d4-a716-446655440010"), indie),
+            (new Guid("660e8400-e29b-41d4-a716-446655440010"), cinematic),
+            // 011 "Here With Me" — Indie, Pop
+            (new Guid("660e8400-e29b-41d4-a716-446655440011"), indie),
+            (new Guid("660e8400-e29b-41d4-a716-446655440011"), pop),
+            // 012 "Die With A Smile" — Pop, R&B
+            (new Guid("660e8400-e29b-41d4-a716-446655440012"), pop),
+            (new Guid("660e8400-e29b-41d4-a716-446655440012"), rnb),
+            // 013 "Blank Space" — Pop, Indie
+            (new Guid("660e8400-e29b-41d4-a716-446655440013"), pop),
+            (new Guid("660e8400-e29b-41d4-a716-446655440013"), indie),
+        };
+
+        foreach (var (mediaId, genreId) in links)
+        {
+            var parameters = new { MediaItemId = mediaId, GenreId = genreId, AddedAt = addedAt };
+            var command = new CommandDefinition(sql, parameters, transaction: transaction);
             await connection.ExecuteAsync(command);
         }
     }

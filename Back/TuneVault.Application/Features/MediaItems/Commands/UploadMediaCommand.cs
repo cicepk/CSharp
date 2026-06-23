@@ -12,4 +12,5 @@ public class UploadMediaCommand : IRequest<MediaDto>
     public string? CoverPath { get; set; }
     public Guid    OwnerId   { get; set; }
     public string  BaseUrl   { get; set; } = string.Empty;
+    public List<Guid> GenreIds { get; set; } = new();
 }
