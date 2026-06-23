@@ -168,6 +168,14 @@ class ApiService {
     });
   }
 
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const res = await this.fetch<ApiResponse<null>>('/user/me/password', {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    if (!res.success) throw new Error(res.error ?? 'Failed to change password');
+  }
+
   async getGenres(): Promise<{ id: string; name: string }[]> {
     const res = await fetch(`${API_BASE_URL}/genre`);
     if (!res.ok) return [];
@@ -249,6 +257,16 @@ class ApiService {
     const res = await this.fetch<ApiResponse<RawMediaItem>>(`/mediaitems/${id}`);
     if (!res.success || !res.data) throw new Error(res.error ?? 'Media not found');
     return toSong(res.data);
+  }
+
+  async getRecommendations(): Promise<Song[]> {
+    try {
+      const res = await this.fetch<ApiResponse<RawMediaItem[]>>('/mediaitems/recommendations');
+      if (!res.success) return [];
+      return (res.data ?? []).map(toSong);
+    } catch {
+      return [];
+    }
   }
 
   async searchSongs(query: string): Promise<Song[]> {

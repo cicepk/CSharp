@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMusic } from '../hooks/MusicContext';
+import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/ApiService';
 import ShareModal from '../components/ShareModal';
 import styles from './Search.module.css';
@@ -96,9 +97,16 @@ export default function Search() {
   const [hasSearched, setHasSearched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [shareTarget, setShareTarget] = useState<Song | null>(null);
+  const [recommendations, setRecommendations] = useState<Song[]>([]);
   const { currentSong, isPlaying, setQueue } = useMusic();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    apiService.getRecommendations().then(setRecommendations).catch(() => {});
+  }, [user]);
 
   const doSearch = async (q: string) => {
     if (!q.trim()) return;
@@ -155,9 +163,37 @@ export default function Search() {
           <button type="submit" className={styles.searchBtn} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#1ed760'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#1db954'; }}>Search</button>
         </form>
 
-        {!hasSearched && (<p className={styles.message}>Tìm kiếm bài hát hoặc người dùng</p>)}
         {isLoading && <p className={styles.message}>Đang tìm kiếm...</p>}
         {hasSearched && !isLoading && !hasResults && (<p className={styles.message}>Không tìm thấy kết quả nào</p>)}
+
+        {/* Recommendations — chỉ hiện khi chưa search */}
+        {!hasSearched && recommendations.length > 0 && (
+          <section>
+            <h2 className={styles.sectionTitle}>Dựa trên sở thích nghe của bạn</h2>
+            <div className={styles.grid}>
+              {recommendations.map((song, idx) => {
+                const isActive = currentSong?.id === song.id;
+                return (
+                  <SongCard
+                    key={song.id}
+                    song={song}
+                    isActive={isActive}
+                    isPlaying={isPlaying}
+                    onPlay={() => {
+                      setQueue(recommendations, idx);
+                      if (song.mediaType === 2) navigate(`/video/${song.id}`);
+                    }}
+                    onShare={() => setShareTarget(song)}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {!hasSearched && recommendations.length === 0 && (
+          <p className={styles.message}>Tìm kiếm bài hát hoặc người dùng</p>
+        )}
 
         {/* Users section */}
         {users.length > 0 && (
