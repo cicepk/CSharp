@@ -27,6 +27,14 @@ export default function Profile() {
   const [editError, setEditError] = useState('');
   const [editLoading, setEditLoading] = useState(false);
 
+  // Change password
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
+  const [pwLoading, setPwLoading] = useState(false);
+
   // Avatar upload
   const [avatarLoading, setAvatarLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,6 +56,11 @@ export default function Profile() {
     setEditEmail(user?.email ?? '');
     setEditBio(user?.bio ?? '');
     setEditError('');
+    setPwCurrent('');
+    setPwNew('');
+    setPwConfirm('');
+    setPwError('');
+    setPwSuccess('');
     setEditing(true);
   };
 
@@ -71,6 +84,36 @@ export default function Profile() {
       setEditError(err instanceof Error ? err.message : 'Update failed');
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  const validatePassword = (pw: string): string => {
+    if (pw.length < 8) return 'Password must be at least 8 characters';
+    if (!/[A-Z]/.test(pw)) return 'Password must contain at least 1 uppercase letter';
+    if (!/[0-9]/.test(pw)) return 'Password must contain at least 1 digit';
+    return '';
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError('');
+    setPwSuccess('');
+    if (!pwCurrent) { setPwError('Please enter your current password'); return; }
+    const validationErr = validatePassword(pwNew);
+    if (validationErr) { setPwError(validationErr); return; }
+    if (pwNew !== pwConfirm) { setPwError('New passwords do not match'); return; }
+    if (pwNew === pwCurrent) { setPwError('New password must be different from current password'); return; }
+    setPwLoading(true);
+    try {
+      await apiService.changePassword(pwCurrent, pwNew);
+      setPwSuccess('Password changed successfully!');
+      setPwCurrent('');
+      setPwNew('');
+      setPwConfirm('');
+    } catch (err) {
+      setPwError(err instanceof Error ? err.message : 'Failed to change password');
+    } finally {
+      setPwLoading(false);
     }
   };
 
@@ -177,6 +220,34 @@ export default function Profile() {
                 <button type="submit" disabled={editLoading} className={styles.btn} style={{ padding: '10px 24px', border: 'none', backgroundColor: '#fff', color: '#000', fontWeight: 700, opacity: editLoading ? 0.7 : 1 }} onMouseEnter={(e) => { if (!editLoading) (e.currentTarget as HTMLElement).style.backgroundColor = '#e0e0e0'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#fff'; }}>{editLoading ? 'Saving...' : 'Save'}</button>
               </div>
             </form>
+
+            <div style={{ borderTop: '1px solid #333', marginTop: '1.5rem', paddingTop: '1.5rem' }}>
+              <h3 style={{ margin: '0 0 1rem', fontSize: '1rem', fontWeight: 700, color: '#fff' }}>Change Password</h3>
+              <form onSubmit={handleChangePassword}>
+                <div className={styles.formCol}>
+                  <label className={styles.formLabel}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#b3b3b3' }}>Current Password</span>
+                    <input type="password" value={pwCurrent} onChange={(e) => { setPwCurrent(e.target.value); setPwError(''); setPwSuccess(''); }} className={styles.formInput} onFocus={(e) => (e.currentTarget as HTMLElement).style.border = '1px solid #1db954'} onBlur={(e) => (e.currentTarget as HTMLElement).style.border = '1px solid #535353'} />
+                  </label>
+                  <label className={styles.formLabel}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#b3b3b3' }}>New Password</span>
+                    <input type="password" value={pwNew} onChange={(e) => { setPwNew(e.target.value); setPwError(''); setPwSuccess(''); }} className={styles.formInput} onFocus={(e) => (e.currentTarget as HTMLElement).style.border = '1px solid #1db954'} onBlur={(e) => (e.currentTarget as HTMLElement).style.border = '1px solid #535353'} />
+                  </label>
+                  <label className={styles.formLabel}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#b3b3b3' }}>Confirm New Password</span>
+                    <input type="password" value={pwConfirm} onChange={(e) => { setPwConfirm(e.target.value); setPwError(''); setPwSuccess(''); }} className={styles.formInput} onFocus={(e) => (e.currentTarget as HTMLElement).style.border = '1px solid #1db954'} onBlur={(e) => (e.currentTarget as HTMLElement).style.border = '1px solid #535353'} />
+                  </label>
+                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: '#535353' }}>
+                    Min 8 characters · At least 1 uppercase letter · At least 1 digit
+                  </p>
+                </div>
+                {pwError && (<p style={{ margin: '0.75rem 0 0', fontSize: '0.8rem', color: '#e53e3e' }}>{pwError}</p>)}
+                {pwSuccess && (<p style={{ margin: '0.75rem 0 0', fontSize: '0.8rem', color: '#1db954' }}>{pwSuccess}</p>)}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                  <button type="submit" disabled={pwLoading} className={styles.btn} style={{ padding: '10px 24px', border: 'none', backgroundColor: '#1db954', color: '#000', fontWeight: 700, opacity: pwLoading ? 0.7 : 1 }} onMouseEnter={(e) => { if (!pwLoading) (e.currentTarget as HTMLElement).style.backgroundColor = '#1ed760'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1db954'; }}>{pwLoading ? 'Updating...' : 'Change Password'}</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
