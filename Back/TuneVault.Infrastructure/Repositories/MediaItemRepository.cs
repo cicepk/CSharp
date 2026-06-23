@@ -263,6 +263,44 @@ public class MediaItemRepository : IMediaItemRepository
         }
     }
 
+    public async Task<IReadOnlyList<MediaItem>> GetRecommendationsByGenreAsync(Guid userId, int limit = 20, CancellationToken cancellationToken = default)
+    {
+        // Lấy media cùng genre với top 3 genre user nghe nhiều nhất, shuffle random, loại những media gần đây
+        const string sql = @"
+            SELECT DISTINCT TOP (@Limit)
+                m.Id, m.Title, m.Artist, m.FilePath, m.CoverPath, m.MediaType,
+                m.DurationSeconds, m.CreatedAt, m.OwnerId,
+                u.UserName AS OwnerUsername
+            FROM MediaItems m
+            LEFT JOIN UserProfiles u ON u.Id = m.OwnerId
+            INNER JOIN MediaGenres mg ON mg.MediaItemId = m.Id
+            WHERE mg.GenreId IN (
+                SELECT TOP 3 sub.GenreId
+                FROM (
+                    SELECT mg2.GenreId, COUNT(*) AS cnt
+                    FROM PlayHistory ph
+                    INNER JOIN MediaGenres mg2 ON mg2.MediaItemId = ph.MediaItemId
+                    WHERE ph.UserId = @UserId
+                    GROUP BY mg2.GenreId
+                ) sub
+                ORDER BY sub.cnt DESC
+            )
+            AND m.Id NOT IN (
+                SELECT TOP 30 ph2.MediaItemId
+                FROM PlayHistory ph2
+                WHERE ph2.UserId = @UserId
+                ORDER BY ph2.PlayedAt DESC
+            )
+            ORDER BY NEWID()";
+
+        using (var connection = _connectionFactory.CreateConnection())
+        {
+            var command = new CommandDefinition(sql, new { UserId = userId, Limit = limit }, cancellationToken: cancellationToken);
+            var items = await connection.QueryAsync<MediaItem>(command);
+            return items.ToList();
+        }
+    }
+
     public async Task<IReadOnlyList<PlayHistory>> GetPlayHistoryByMediaItemIdAsync(Guid mediaItemId, int limit = 50, CancellationToken cancellationToken = default)
     {
         const string sql = @"

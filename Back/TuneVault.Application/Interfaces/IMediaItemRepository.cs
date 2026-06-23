@@ -32,4 +32,5 @@ public interface IMediaItemRepository
     Task AddPlayHistoryAsync(PlayHistory playHistory, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PlayHistory>> GetPlayHistoryByUserIdAsync(Guid userId, int limit = 50, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PlayHistory>> GetPlayHistoryByMediaItemIdAsync(Guid mediaItemId, int limit = 50, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<MediaItem>> GetRecommendationsByGenreAsync(Guid userId, int limit = 20, CancellationToken cancellationToken = default);
 }

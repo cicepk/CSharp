@@ -59,6 +59,19 @@ public class MediaItemsController : ControllerBase
         return Ok(ApiResponse<List<MediaDto>>.SuccessResponse(result));
     }
 
+    // GET /api/mediaitems/recommendations
+    [HttpGet("recommendations")]
+    [Authorize]
+    public async Task<IActionResult> GetRecommendations(CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetRecommendationsQuery
+        {
+            UserId  = GetCurrentUserId(),
+            BaseUrl = BaseUrl
+        }, ct);
+        return Ok(ApiResponse<List<MediaDto>>.SuccessResponse(result));
+    }
+
     // GET /api/mediaitems/{id}
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
