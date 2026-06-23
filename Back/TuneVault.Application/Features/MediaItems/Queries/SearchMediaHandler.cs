@@ -31,6 +31,7 @@ public class SearchMediaHandler : IRequestHandler<SearchMediaQuery, List<MediaDt
                 MediaType       = (int)item.MediaType,
                 DurationSeconds = item.DurationSeconds,
                 OwnerId         = item.OwnerId,
+                OwnerUsername   = item.OwnerUsername,
                 FilePath        = $"{request.BaseUrl}/api/mediaitems/{item.Id}/stream",
                 CoverPath       = item.CoverPath != null ? (item.CoverPath.StartsWith("http") ? item.CoverPath : $"{request.BaseUrl}{item.CoverPath}") : null,
                 CreatedAt       = item.CreatedAt
