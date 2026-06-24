@@ -143,14 +143,15 @@ public class MediaItemsController : ControllerBase
 
         var result = await _mediator.Send(new UploadMediaCommand
         {
-            Title     = request.Title,
-            Artist    = request.Artist,
+            Title = request.Title,
+            Artist = request.Artist,
             MediaType = request.MediaType,
-            FilePath  = filePath,
+            FilePath = filePath,
             CoverPath = coverPath,
-            OwnerId   = GetCurrentUserId(),
-            BaseUrl   = BaseUrl,
-            GenreIds  = request.GenreIds ?? new List<Guid>()
+            OwnerId = GetCurrentUserId(),
+            BaseUrl = BaseUrl,
+            DurationSeconds = request.DurationSeconds,
+            GenreIds = request.GenreIds ?? new List<Guid>()
         }, ct);
 
         return CreatedAtAction(nameof(GetById), new { id = result.Id },
