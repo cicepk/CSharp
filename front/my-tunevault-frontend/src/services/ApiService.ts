@@ -1,4 +1,4 @@
-import type { Song, Playlist, User, PlayHistoryItem, NotificationItem, UserSearchResult, FollowStatus, MediaItem, ShareItem } from '../types';
+import type { Song, Playlist, User, PlayHistoryItem, NotificationItem, UserSearchResult, FollowStatus, MediaItem, ShareItem, AdminUser, AdminStats, AdminTrack } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5067/api';
 const API_ORIGIN = API_BASE_URL.replace(/\/api.*$/, '');
@@ -189,7 +189,8 @@ class ApiService {
     mediaType: 1 | 2,
     cover?: File,
     onProgress?: (percent: number) => void,
-    genreIds: string[] = []
+    genreIds: string[] = [],
+    durationSeconds = 0
   ): Promise<Song> {
     const token = localStorage.getItem('auth_token');
     const formData = new FormData();
@@ -197,6 +198,7 @@ class ApiService {
     formData.append('title', title);
     formData.append('artist', artist);
     formData.append('mediaType', String(mediaType));
+    formData.append('durationSeconds', String(durationSeconds));
     if (cover) formData.append('cover', cover);
     genreIds.forEach(id => formData.append('genreIds', id));
 
@@ -476,6 +478,34 @@ class ApiService {
   // Delete a media item (only owner can do this)
   async deleteMedia(id: string): Promise<void> {
     await this.fetch<ApiResponse<null>>(`/mediaitems/${id}`, { method: 'DELETE' });
+  }
+
+  // --- Admin ---
+
+  async getAdminStats(): Promise<AdminStats> {
+    const res = await this.fetch<ApiResponse<AdminStats>>('/admin/stats');
+    if (!res.success || !res.data) throw new Error('Failed to fetch stats');
+    return res.data;
+  }
+
+  async getAdminUsers(): Promise<AdminUser[]> {
+    const res = await this.fetch<ApiResponse<AdminUser[]>>('/admin/users');
+    if (!res.success) return [];
+    return res.data ?? [];
+  }
+
+  async getAdminUserTracks(userId: string): Promise<AdminTrack[]> {
+    const res = await this.fetch<ApiResponse<AdminTrack[]>>(`/admin/users/${userId}/tracks`);
+    if (!res.success) return [];
+    return res.data ?? [];
+  }
+
+  async adminDeleteTrack(trackId: string): Promise<void> {
+    await this.fetch<ApiResponse<null>>(`/admin/tracks/${trackId}`, { method: 'DELETE' });
+  }
+
+  async adminDeleteUser(userId: string): Promise<void> {
+    await this.fetch<ApiResponse<null>>(`/admin/users/${userId}`, { method: 'DELETE' });
   }
 }
 

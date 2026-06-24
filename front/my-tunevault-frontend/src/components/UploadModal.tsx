@@ -17,6 +17,21 @@ function getMediaType(file: File): 1 | 2 | null {
   return null;
 }
 
+function getDuration(file: File, mediaType: 1 | 2): Promise<number> {
+  return new Promise(resolve => {
+    const el = mediaType === 2
+      ? document.createElement('video')
+      : document.createElement('audio');
+    el.preload = 'metadata';
+    el.onloadedmetadata = () => {
+      URL.revokeObjectURL(el.src);
+      resolve(Math.round(el.duration));
+    };
+    el.onerror = () => resolve(0);
+    el.src = URL.createObjectURL(file);
+  });
+}
+
 function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -34,6 +49,7 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
+  const [duration, setDuration] = useState(0);
   const [genres, setGenres] = useState<{ id: string; name: string }[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
 
@@ -61,6 +77,7 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
     setError('');
     setMediaFile(file);
     setMediaType(detected);
+    getDuration(file, detected).then(setDuration);
     // Auto-fill title from filename (remove extension)
     const nameNoExt = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
     setTitle(nameNoExt);
@@ -100,6 +117,7 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
         coverFile ?? undefined,
         setProgress,
         selectedGenres,
+        duration,
       );
       setDone(true);
       setTimeout(() => { onUploaded(); onClose(); }, 1200);
