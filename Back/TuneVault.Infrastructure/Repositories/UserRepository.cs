@@ -114,14 +114,61 @@ public class UserRepository : IUserRepository
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        const string sql = "DELETE FROM UserProfiles WHERE Id = @Id";
-
         using (var connection = _connectionFactory.CreateConnection())
         {
-            var parameters = new { Id = id };
-            var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
-            var affectedRows = await connection.ExecuteAsync(command);
-            return affectedRows > 0;
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                var p = new { Id = id };
+
+                // 1. PlaylistItems: items trong playlist của user, hoặc items là media của user trong playlist bất kỳ
+                await connection.ExecuteAsync(new CommandDefinition(@"
+                    DELETE FROM PlaylistItems
+                    WHERE PlaylistId IN (SELECT Id FROM Playlists WHERE OwnerId = @Id)
+                       OR MediaItemId IN (SELECT Id FROM MediaItems WHERE OwnerId = @Id)",
+                    p, transaction, cancellationToken: cancellationToken));
+
+                // 2. MediaShares: share liên quan đến user hoặc nội dung của user
+                await connection.ExecuteAsync(new CommandDefinition(@"
+                    DELETE FROM MediaShares
+                    WHERE SharedByUserId = @Id
+                       OR SharedToUserId = @Id
+                       OR MediaItemId IN (SELECT Id FROM MediaItems WHERE OwnerId = @Id)
+                       OR PlaylistId   IN (SELECT Id FROM Playlists  WHERE OwnerId = @Id)",
+                    p, transaction, cancellationToken: cancellationToken));
+
+                // 3. Follows: user follow hoặc được follow
+                await connection.ExecuteAsync(new CommandDefinition(
+                    "DELETE FROM Follows WHERE FollowerId = @Id OR FollowedId = @Id",
+                    p, transaction, cancellationToken: cancellationToken));
+
+                // 4. Favourites của user khác trỏ vào media của user bị xóa
+                await connection.ExecuteAsync(new CommandDefinition(@"
+                    DELETE FROM Favourites
+                    WHERE MediaItemId IN (SELECT Id FROM MediaItems WHERE OwnerId = @Id)",
+                    p, transaction, cancellationToken: cancellationToken));
+
+                // 5. PlayHistory của user khác cho media của user bị xóa (FK ON DELETE NO ACTION)
+                await connection.ExecuteAsync(new CommandDefinition(@"
+                    DELETE FROM PlayHistory
+                    WHERE MediaItemId IN (SELECT Id FROM MediaItems WHERE OwnerId = @Id)",
+                    p, transaction, cancellationToken: cancellationToken));
+
+                // 6. Xóa UserProfiles — cascade tự động xóa: Playlists, MediaItems,
+                //    Notifications, Favourites (own), PlayHistory (own)
+                var affected = await connection.ExecuteAsync(new CommandDefinition(
+                    "DELETE FROM UserProfiles WHERE Id = @Id",
+                    p, transaction, cancellationToken: cancellationToken));
+
+                transaction.Commit();
+                return affected > 0;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
     }
 
