@@ -9,7 +9,7 @@ import type { Playlist, MediaItem } from '../types';
 const FALLBACK_COVER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="160" height="160"%3E%3Crect fill="%23282828" width="160" height="160"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23535353" font-size="48"%3E%F0%9F%8E%B5%3C/text%3E%3C/svg%3E';
 
 export default function Profile() {
-  const { user, refreshUser, setUser } = useAuth();
+  const { user, isAdmin, refreshUser, setUser } = useAuth();
   const { removeSongById } = useMusic();
   const navigate = useNavigate();
 
@@ -167,6 +167,15 @@ export default function Profile() {
   return (
     <div className={styles.container}>
       <div className={styles.hero} style={{ background: gradientBg }}>
+        <button
+          onClick={() => navigate(-1)}
+          className={styles.backIconBtn}
+          title="Back"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+        </button>
         <div className={styles.heroInner}>
           <div onClick={handleAvatarClick} title="Change avatar" className={styles.avatarBox}>
             {user?.avatarUrl ? (<img src={user.avatarUrl} alt={user.username} className={styles.avatarImg} />) : (<div className={styles.avatarInitial}>{initial}</div>)}
@@ -179,7 +188,14 @@ export default function Profile() {
 
           <div className={styles.info}>
             <p className={styles.meta}>Profile</p>
-            <h1 className={styles.displayName} style={{ fontSize: user && user.username.length > 12 ? '2.5rem' : '3.5rem' }}>{user?.username}</h1>
+            <h1 className={styles.displayName} style={{ fontSize: user && user.username.length > 12 ? '2.5rem' : '3.5rem' }}>
+              {user?.username}
+              {isAdmin && (
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, background: 'rgba(29,185,84,0.2)', color: '#1db954', padding: '3px 10px', borderRadius: '999px', marginLeft: '12px', verticalAlign: 'middle' }}>
+                  Admin
+                </span>
+              )}
+            </h1>
             {user?.bio && (<p className={styles.bio}>{user.bio}</p>)}
             <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}><span style={{ color: '#fff', fontWeight: 700 }}>{publicCount}</span> Public Playlists · <span style={{ color: '#fff', fontWeight: 700 }}>{user?.followingCount ?? 0}</span> Following · <span style={{ color: '#fff', fontWeight: 700 }}>{user?.followerCount ?? 0}</span> Followers</p>
           </div>
@@ -188,7 +204,16 @@ export default function Profile() {
 
       <div className={styles.actionsBar}>
         <button onClick={openEdit} className={`${styles.btn} ${styles.editBtn}`} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#fff'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#535353'; }}>Edit profile</button>
-        <button onClick={() => navigate(-1)} className={`${styles.btn} ${styles.backBtn}`} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#fff'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#b3b3b3'; }}>Back</button>
+        {isAdmin && (
+          <button
+            onClick={() => navigate('/admin')}
+            className={`${styles.btn} ${styles.adminBtn}`}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1ed760'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1db954'; }}
+          >
+            Admin panel
+          </button>
+        )}
       </div>
 
       {editing && (

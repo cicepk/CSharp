@@ -5,6 +5,7 @@ import type { User } from '../types';
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
@@ -95,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
+    isAdmin: user?.role === 'Admin',
     isLoading,
     error,
     login,
