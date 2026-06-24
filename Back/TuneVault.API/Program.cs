@@ -125,8 +125,8 @@ if (!app.Environment.IsDevelopment())
 
 // --- Middleware Pipeline ---
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseStaticFiles();
 app.UseCors("ReactApp");
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
