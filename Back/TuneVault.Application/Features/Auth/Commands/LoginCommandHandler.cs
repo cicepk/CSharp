@@ -27,7 +27,8 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
         if (passwordHash == null || !_passwordHasher.Verify(command.Password, passwordHash))
             throw new KeyNotFoundException("Invalid email or password");
 
-        var token = _jwtService.GenerateToken(user.Id, user.UserName, user.Email);
+        var role = user.Role.ToString();
+        var token = _jwtService.GenerateToken(user.Id, user.UserName, user.Email, role);
 
         return new LoginResponse
         {
@@ -35,7 +36,8 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
             Username  = user.UserName,
             Email     = user.Email,
             Token     = token,
-            ExpiresAt = _jwtService.GetExpirationDate()
+            ExpiresAt = _jwtService.GetExpirationDate(),
+            Role      = role
         };
     }
 }

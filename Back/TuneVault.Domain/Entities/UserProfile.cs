@@ -1,3 +1,5 @@
+using TuneVault.Domain.Enums;
+
 namespace TuneVault.Domain.Entities
 {
     public class UserProfile
@@ -8,6 +10,7 @@ namespace TuneVault.Domain.Entities
         public string? Bio {get; set;}
         public string? AvatarPath {get; set;}
         public DateTime CreatedAt {get; set;} = DateTime.UtcNow;
+        public UserRole Role {get; set;} = UserRole.User;
 
         public ICollection<MediaItem> MediaItems {get; set;} = new List<MediaItem>();
         public ICollection<Playlist> Playlists {get; set;} = new List<Playlist>();

@@ -7,6 +7,7 @@ CREATE TABLE UserProfiles (
     Bio          NVARCHAR(300)    NULL,
     AvatarPath   NVARCHAR(500)    NULL,
     CreatedAt    DATETIME2        NOT NULL,
+    Role         INT              NOT NULL DEFAULT 1,
     CONSTRAINT PK_UserProfiles PRIMARY KEY (Id)
 );
 

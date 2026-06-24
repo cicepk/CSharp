@@ -295,25 +295,27 @@ public class DataSeeder : IDataSeeder
     private async Task SeedUsersAsync(IDbConnection connection, IDbTransaction transaction)
     {
         const string sql = @"
-            INSERT INTO UserProfiles (Id, UserName, Email, PasswordHash, CreatedAt)
-            VALUES (@Id, @UserName, @Email, @PasswordHash, @CreatedAt)";
+            INSERT INTO UserProfiles (Id, UserName, Email, PasswordHash, CreatedAt, Role)
+            VALUES (@Id, @UserName, @Email, @PasswordHash, @CreatedAt, @Role)";
 
         // Password chung cho cả 2 users: Password123
         var passwordHash = BCrypt.Net.BCrypt.HashPassword("Password123");
 
-        var users = new List<(Guid id, string userName, string email, DateTime createdAt)>
+        var users = new List<(Guid id, string userName, string email, DateTime createdAt, int role)>
         {
             (
                 new Guid("550e8400-e29b-41d4-a716-446655440001"),
                 "admin",
                 "admin@tunevault.com",
-                new DateTime(2026, 1, 1, 10, 0, 0)
+                new DateTime(2026, 1, 1, 10, 0, 0),
+                2  // Admin
             ),
             (
                 new Guid("550e8400-e29b-41d4-a716-446655440002"),
                 "john_music",
                 "john@tunevault.com",
-                new DateTime(2026, 1, 5, 14, 30, 0)
+                new DateTime(2026, 1, 5, 14, 30, 0),
+                1  // User
             )
         };
 
@@ -325,7 +327,8 @@ public class DataSeeder : IDataSeeder
                 UserName = user.userName,
                 Email = user.email,
                 PasswordHash = passwordHash,
-                CreatedAt = user.createdAt
+                CreatedAt = user.createdAt,
+                Role = user.role
             };
 
             var command = new CommandDefinition(sql, parameters, transaction: transaction);

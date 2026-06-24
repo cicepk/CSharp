@@ -23,4 +23,6 @@ public class LoginResponse
 
     // Thời gian hết hạn token (UTC)
     public DateTime ExpiresAt { get; set; }
+
+    public string Role { get; set; } = "User";
 }
