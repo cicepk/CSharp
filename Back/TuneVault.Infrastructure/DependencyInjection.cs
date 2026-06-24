@@ -33,8 +33,16 @@ public static class DependencyInjection
         // Services
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IDataSeeder, DataSeeder>();
-        services.AddScoped<IFileStorageService, LocalFileStorageService>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
+
+        // File storage 
+        services.Configure<SupabaseSettings>(configuration.GetSection("Supabase"));
+        services.AddHttpClient("supabase");
+        var supabaseUrl = configuration["Supabase:Url"];
+        if (!string.IsNullOrWhiteSpace(supabaseUrl))
+            services.AddScoped<IFileStorageService, SupabaseFileStorageService>();
+        else
+            services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
         return services;
     }

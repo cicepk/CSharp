@@ -16,4 +16,10 @@ public class UploadMediaRequest
 
     // Loại media: 1 = Audio, 2 = Video
     public int MediaType { get; set; }
+
+    // Danh sách genre IDs (optional, tối đa 3)
+    public List<Guid> GenreIds { get; set; } = new();
+
+    // Thời lượng (giây), do frontend đọc từ metadata file rồi gửi lên
+    public int DurationSeconds { get; set; }
 }

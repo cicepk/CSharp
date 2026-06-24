@@ -1,4 +1,4 @@
-import type { Song, Playlist, User, PlayHistoryItem, NotificationItem, UserSearchResult, FollowStatus, MediaItem, ShareItem } from '../types';
+import type { Song, Playlist, User, PlayHistoryItem, NotificationItem, UserSearchResult, FollowStatus, MediaItem, ShareItem, AdminUser, AdminStats, AdminTrack } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5067/api';
 const API_ORIGIN = API_BASE_URL.replace(/\/api.*$/, '');
@@ -24,6 +24,7 @@ interface RawMediaItem {
   coverPath?: string;
   durationSeconds: number;
   mediaType: number;
+  ownerUsername?: string;
 }
 
 interface RawPlaylist {
@@ -61,6 +62,7 @@ function toSong(item: RawMediaItem): Song {
     url: absoluteUrl(item.filePath),
     cover: absoluteUrl(item.coverPath ?? ''),
     mediaType: item.mediaType,
+    ownerUsername: item.ownerUsername,
   };
 }
 
@@ -166,13 +168,29 @@ class ApiService {
     });
   }
 
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const res = await this.fetch<ApiResponse<null>>('/user/me/password', {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    if (!res.success) throw new Error(res.error ?? 'Failed to change password');
+  }
+
+  async getGenres(): Promise<{ id: string; name: string }[]> {
+    const res = await fetch(`${API_BASE_URL}/genre`);
+    if (!res.ok) return [];
+    return res.json();
+  }
+
   async uploadMedia(
     file: File,
     title: string,
     artist: string,
     mediaType: 1 | 2,
     cover?: File,
-    onProgress?: (percent: number) => void
+    onProgress?: (percent: number) => void,
+    genreIds: string[] = [],
+    durationSeconds = 0
   ): Promise<Song> {
     const token = localStorage.getItem('auth_token');
     const formData = new FormData();
@@ -180,7 +198,9 @@ class ApiService {
     formData.append('title', title);
     formData.append('artist', artist);
     formData.append('mediaType', String(mediaType));
+    formData.append('durationSeconds', String(durationSeconds));
     if (cover) formData.append('cover', cover);
+    genreIds.forEach(id => formData.append('genreIds', id));
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -239,6 +259,16 @@ class ApiService {
     const res = await this.fetch<ApiResponse<RawMediaItem>>(`/mediaitems/${id}`);
     if (!res.success || !res.data) throw new Error(res.error ?? 'Media not found');
     return toSong(res.data);
+  }
+
+  async getRecommendations(): Promise<Song[]> {
+    try {
+      const res = await this.fetch<ApiResponse<RawMediaItem[]>>('/mediaitems/recommendations');
+      if (!res.success) return [];
+      return (res.data ?? []).map(toSong);
+    } catch {
+      return [];
+    }
   }
 
   async searchSongs(query: string): Promise<Song[]> {
@@ -448,6 +478,34 @@ class ApiService {
   // Delete a media item (only owner can do this)
   async deleteMedia(id: string): Promise<void> {
     await this.fetch<ApiResponse<null>>(`/mediaitems/${id}`, { method: 'DELETE' });
+  }
+
+  // --- Admin ---
+
+  async getAdminStats(): Promise<AdminStats> {
+    const res = await this.fetch<ApiResponse<AdminStats>>('/admin/stats');
+    if (!res.success || !res.data) throw new Error('Failed to fetch stats');
+    return res.data;
+  }
+
+  async getAdminUsers(): Promise<AdminUser[]> {
+    const res = await this.fetch<ApiResponse<AdminUser[]>>('/admin/users');
+    if (!res.success) return [];
+    return res.data ?? [];
+  }
+
+  async getAdminUserTracks(userId: string): Promise<AdminTrack[]> {
+    const res = await this.fetch<ApiResponse<AdminTrack[]>>(`/admin/users/${userId}/tracks`);
+    if (!res.success) return [];
+    return res.data ?? [];
+  }
+
+  async adminDeleteTrack(trackId: string): Promise<void> {
+    await this.fetch<ApiResponse<null>>(`/admin/tracks/${trackId}`, { method: 'DELETE' });
+  }
+
+  async adminDeleteUser(userId: string): Promise<void> {
+    await this.fetch<ApiResponse<null>>(`/admin/users/${userId}`, { method: 'DELETE' });
   }
 }
 

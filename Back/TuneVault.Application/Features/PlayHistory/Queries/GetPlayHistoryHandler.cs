@@ -32,7 +32,7 @@ public class GetPlayHistoryHandler : IRequestHandler<GetPlayHistoryQuery, List<P
                 Title       = media.Title,
                 Artist      = media.Artist,
                 StreamUrl   = $"{request.BaseUrl}/api/mediaitems/{media.Id}/stream",
-                CoverPath   = media.CoverPath != null ? $"{request.BaseUrl}{media.CoverPath}" : null,
+                CoverPath   = media.CoverPath != null ? (media.CoverPath.StartsWith("http") ? media.CoverPath : $"{request.BaseUrl}{media.CoverPath}") : null,
                 PlayedAt    = h.PlayedAt
             });
         }

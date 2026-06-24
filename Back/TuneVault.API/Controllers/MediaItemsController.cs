@@ -59,6 +59,19 @@ public class MediaItemsController : ControllerBase
         return Ok(ApiResponse<List<MediaDto>>.SuccessResponse(result));
     }
 
+    // GET /api/mediaitems/recommendations
+    [HttpGet("recommendations")]
+    [Authorize]
+    public async Task<IActionResult> GetRecommendations(CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetRecommendationsQuery
+        {
+            UserId  = GetCurrentUserId(),
+            BaseUrl = BaseUrl
+        }, ct);
+        return Ok(ApiResponse<List<MediaDto>>.SuccessResponse(result));
+    }
+
     // GET /api/mediaitems/{id}
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
@@ -130,29 +143,34 @@ public class MediaItemsController : ControllerBase
 
         var result = await _mediator.Send(new UploadMediaCommand
         {
-            Title     = request.Title,
-            Artist    = request.Artist,
+            Title = request.Title,
+            Artist = request.Artist,
             MediaType = request.MediaType,
-            FilePath  = filePath,
+            FilePath = filePath,
             CoverPath = coverPath,
-            OwnerId   = GetCurrentUserId(),
-            BaseUrl   = BaseUrl
+            OwnerId = GetCurrentUserId(),
+            BaseUrl = BaseUrl,
+            DurationSeconds = request.DurationSeconds,
+            GenreIds = request.GenreIds ?? new List<Guid>()
         }, ct);
 
         return CreatedAtAction(nameof(GetById), new { id = result.Id },
             ApiResponse<MediaDto>.SuccessResponse(result, "Upload successful"));
     }
 
-    // GET /api/mediaitems/{id}/stream 
+    // GET /api/mediaitems/{id}/stream
     [HttpGet("{id:guid}/stream")]
     public async Task<IActionResult> Stream(Guid id, CancellationToken ct)
     {
-        var relativePath = await _mediator.Send(new GetMediaFilePathQuery { Id = id }, ct);
-        if (relativePath == null)
+        var filePath = await _mediator.Send(new GetMediaFilePathQuery { Id = id }, ct);
+        if (filePath == null)
             return NotFound(ApiResponse<object>.ErrorResponse("Media not found"));
 
-        var wwwroot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-        var physicalPath = Path.Combine(wwwroot, relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+        if (filePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            return Redirect(filePath);
+
+        var wwwroot      = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+        var physicalPath = Path.Combine(wwwroot, filePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
 
         if (!System.IO.File.Exists(physicalPath))
             return NotFound(ApiResponse<object>.ErrorResponse("File not found on server"));

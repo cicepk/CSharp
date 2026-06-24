@@ -26,7 +26,7 @@ public class SearchUsersHandler : IRequestHandler<SearchUsersQuery, List<UserSea
             {
                 Id        = u.Id,
                 Username  = u.UserName,
-                AvatarUrl = u.AvatarPath != null ? $"{request.BaseUrl}{u.AvatarPath}" : null,
+                AvatarUrl = u.AvatarPath != null ? (u.AvatarPath.StartsWith("http") ? u.AvatarPath : $"{request.BaseUrl}{u.AvatarPath}") : null,
                 Bio       = u.Bio
             })
             .ToList();

@@ -26,4 +26,6 @@ public class UserDetailDto
 
     // Ngày tạo tài khoản (UTC)
     public DateTime CreatedAt { get; set; }
+
+    public string Role { get; set; } = "User";
 }

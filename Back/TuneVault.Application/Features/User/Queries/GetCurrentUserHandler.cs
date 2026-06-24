@@ -30,10 +30,11 @@ public class GetCurrentUserHandler : IRequestHandler<GetCurrentUserQuery, UserDe
             Username       = user.UserName,
             Email          = user.Email,
             Bio            = user.Bio,
-            AvatarUrl      = user.AvatarPath != null ? $"{request.BaseUrl}{user.AvatarPath}" : null,
+            AvatarUrl      = user.AvatarPath != null ? (user.AvatarPath.StartsWith("http") ? user.AvatarPath : $"{request.BaseUrl}{user.AvatarPath}") : null,
             FollowerCount  = followerCount,
             FollowingCount = followingCount,
-            CreatedAt      = user.CreatedAt
+            CreatedAt      = user.CreatedAt,
+            Role           = user.Role.ToString()
         };
     }
 }

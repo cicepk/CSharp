@@ -1,4 +1,5 @@
 using Dapper;
+using TuneVault.Application.DTOs.Admin;
 using TuneVault.Application.Interfaces;
 using TuneVault.Domain.Entities;
 using TuneVault.Infrastructure.Data;
@@ -17,7 +18,7 @@ public class UserRepository : IUserRepository
     public async Task<UserProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            SELECT Id, UserName, Email, Bio, AvatarPath, CreatedAt
+            SELECT Id, UserName, Email, Bio, AvatarPath, CreatedAt, Role
             FROM UserProfiles
             WHERE Id = @Id";
 
@@ -33,7 +34,7 @@ public class UserRepository : IUserRepository
     public async Task<UserProfile?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            SELECT Id, UserName, Email, Bio, AvatarPath, CreatedAt
+            SELECT Id, UserName, Email, Bio, AvatarPath, CreatedAt, Role
             FROM UserProfiles
             WHERE Email = @Email";
 
@@ -49,7 +50,7 @@ public class UserRepository : IUserRepository
     public async Task<UserProfile?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            SELECT Id, UserName, Email, Bio, AvatarPath, CreatedAt
+            SELECT Id, UserName, Email, Bio, AvatarPath, CreatedAt, Role
             FROM UserProfiles
             WHERE UserName = @UserName";
 
@@ -65,8 +66,8 @@ public class UserRepository : IUserRepository
     public async Task<Guid> CreateAsync(UserProfile user, string passwordHash, CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            INSERT INTO UserProfiles (Id, UserName, Email, CreatedAt, PasswordHash)
-            VALUES (@Id, @UserName, @Email, @CreatedAt, @PasswordHash)";
+            INSERT INTO UserProfiles (Id, UserName, Email, CreatedAt, PasswordHash, Role)
+            VALUES (@Id, @UserName, @Email, @CreatedAt, @PasswordHash, @Role)";
 
         using (var connection = _connectionFactory.CreateConnection())
         {
@@ -76,7 +77,8 @@ public class UserRepository : IUserRepository
                 user.UserName,
                 user.Email,
                 user.CreatedAt,
-                PasswordHash = passwordHash
+                PasswordHash = passwordHash,
+                Role = (int)user.Role
             };
             var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
             await connection.ExecuteAsync(command);
@@ -151,10 +153,25 @@ public class UserRepository : IUserRepository
         }
     }
 
+    public async Task<bool> UpdatePasswordHashAsync(Guid userId, string newPasswordHash, CancellationToken cancellationToken = default)
+    {
+        const string sql = @"
+            UPDATE UserProfiles
+            SET PasswordHash = @PasswordHash
+            WHERE Id = @Id";
+
+        using (var connection = _connectionFactory.CreateConnection())
+        {
+            var command = new CommandDefinition(sql, new { Id = userId, PasswordHash = newPasswordHash }, cancellationToken: cancellationToken);
+            var affected = await connection.ExecuteAsync(command);
+            return affected > 0;
+        }
+    }
+
     public async Task<IReadOnlyList<UserProfile>> SearchAsync(string query, int limit = 10, CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            SELECT TOP (@Limit) Id, UserName, Email, Bio, AvatarPath, CreatedAt
+            SELECT TOP (@Limit) Id, UserName, Email, Bio, AvatarPath, CreatedAt, Role
             FROM UserProfiles
             WHERE UserName LIKE @Query
             ORDER BY UserName";
@@ -166,6 +183,36 @@ public class UserRepository : IUserRepository
                 cancellationToken: cancellationToken);
             var results = await connection.QueryAsync<UserProfile>(command);
             return results.ToList().AsReadOnly();
+        }
+    }
+
+    public async Task<IReadOnlyList<AdminUserDto>> GetAllWithUploadCountAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = @"
+            SELECT u.Id, u.UserName AS Username, u.Email,
+                   CASE u.Role WHEN 2 THEN 'Admin' ELSE 'User' END AS Role,
+                   u.CreatedAt, COUNT(m.Id) AS UploadCount
+            FROM UserProfiles u
+            LEFT JOIN MediaItems m ON m.OwnerId = u.Id
+            GROUP BY u.Id, u.UserName, u.Email, u.Role, u.CreatedAt
+            ORDER BY u.CreatedAt";
+
+        using (var connection = _connectionFactory.CreateConnection())
+        {
+            var command = new CommandDefinition(sql, cancellationToken: cancellationToken);
+            var results = await connection.QueryAsync<AdminUserDto>(command);
+            return results.ToList().AsReadOnly();
+        }
+    }
+
+    public async Task<int> GetTotalUsersCountAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = "SELECT COUNT(*) FROM UserProfiles";
+
+        using (var connection = _connectionFactory.CreateConnection())
+        {
+            var command = new CommandDefinition(sql, cancellationToken: cancellationToken);
+            return await connection.ExecuteScalarAsync<int>(command);
         }
     }
 }

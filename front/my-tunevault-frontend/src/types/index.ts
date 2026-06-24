@@ -5,6 +5,7 @@ export interface Song {
   cover: string;
   url: string;
   mediaType: number; // 1=Audio, 2=Video
+  ownerUsername?: string;
 }
 
 export interface Playlist {
@@ -27,6 +28,31 @@ export interface User {
   followerCount?: number;
   followingCount?: number;
   createdAt?: string;
+  role?: 'User' | 'Admin';
+}
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  email: string;
+  role: 'User' | 'Admin';
+  uploadCount: number;
+  createdAt: string;
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  totalTracks: number;
+}
+
+export interface AdminTrack {
+  id: string;
+  title: string;
+  artist: string;
+  mediaType: number;
+  durationSeconds: number;
+  coverPath?: string | null;
+  createdAt: string;
 }
 
 export interface MediaItem {

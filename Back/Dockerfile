@@ -20,6 +20,7 @@ COPY TuneVault.Infrastructure/Database/schema.sql /app/publish/schema.sql
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
+COPY --from=build /src/TuneVault.API/wwwroot ./wwwroot
 
 ENV ASPNETCORE_URLS=http://+:10000
 

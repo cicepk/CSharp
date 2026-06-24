@@ -38,7 +38,8 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, LoginResp
         };
 
         var userId = await _userRepository.CreateAsync(user, passwordHash, cancellationToken);
-        var token  = _jwtService.GenerateToken(userId, command.Username, command.Email);
+        var role = user.Role.ToString();
+        var token  = _jwtService.GenerateToken(userId, command.Username, command.Email, role);
 
         return new LoginResponse
         {
@@ -46,7 +47,8 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, LoginResp
             Username  = command.Username,
             Email     = command.Email,
             Token     = token,
-            ExpiresAt = _jwtService.GetExpirationDate()
+            ExpiresAt = _jwtService.GetExpirationDate(),
+            Role      = role
         };
     }
 }

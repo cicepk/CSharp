@@ -9,7 +9,7 @@ import type { Playlist, MediaItem } from '../types';
 const FALLBACK_COVER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="160" height="160"%3E%3Crect fill="%23282828" width="160" height="160"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23535353" font-size="48"%3E%F0%9F%8E%B5%3C/text%3E%3C/svg%3E';
 
 export default function Profile() {
-  const { user, refreshUser, setUser } = useAuth();
+  const { user, isAdmin, refreshUser, setUser } = useAuth();
   const { removeSongById } = useMusic();
   const navigate = useNavigate();
 
@@ -26,6 +26,14 @@ export default function Profile() {
   const [editBio, setEditBio] = useState('');
   const [editError, setEditError] = useState('');
   const [editLoading, setEditLoading] = useState(false);
+
+  // Change password
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
+  const [pwLoading, setPwLoading] = useState(false);
 
   // Avatar upload
   const [avatarLoading, setAvatarLoading] = useState(false);
@@ -48,6 +56,11 @@ export default function Profile() {
     setEditEmail(user?.email ?? '');
     setEditBio(user?.bio ?? '');
     setEditError('');
+    setPwCurrent('');
+    setPwNew('');
+    setPwConfirm('');
+    setPwError('');
+    setPwSuccess('');
     setEditing(true);
   };
 
@@ -71,6 +84,36 @@ export default function Profile() {
       setEditError(err instanceof Error ? err.message : 'Update failed');
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  const validatePassword = (pw: string): string => {
+    if (pw.length < 8) return 'Password must be at least 8 characters';
+    if (!/[A-Z]/.test(pw)) return 'Password must contain at least 1 uppercase letter';
+    if (!/[0-9]/.test(pw)) return 'Password must contain at least 1 digit';
+    return '';
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError('');
+    setPwSuccess('');
+    if (!pwCurrent) { setPwError('Please enter your current password'); return; }
+    const validationErr = validatePassword(pwNew);
+    if (validationErr) { setPwError(validationErr); return; }
+    if (pwNew !== pwConfirm) { setPwError('New passwords do not match'); return; }
+    if (pwNew === pwCurrent) { setPwError('New password must be different from current password'); return; }
+    setPwLoading(true);
+    try {
+      await apiService.changePassword(pwCurrent, pwNew);
+      setPwSuccess('Password changed successfully!');
+      setPwCurrent('');
+      setPwNew('');
+      setPwConfirm('');
+    } catch (err) {
+      setPwError(err instanceof Error ? err.message : 'Failed to change password');
+    } finally {
+      setPwLoading(false);
     }
   };
 
@@ -124,6 +167,15 @@ export default function Profile() {
   return (
     <div className={styles.container}>
       <div className={styles.hero} style={{ background: gradientBg }}>
+        <button
+          onClick={() => navigate(-1)}
+          className={styles.backIconBtn}
+          title="Back"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+        </button>
         <div className={styles.heroInner}>
           <div onClick={handleAvatarClick} title="Change avatar" className={styles.avatarBox}>
             {user?.avatarUrl ? (<img src={user.avatarUrl} alt={user.username} className={styles.avatarImg} />) : (<div className={styles.avatarInitial}>{initial}</div>)}
@@ -136,7 +188,14 @@ export default function Profile() {
 
           <div className={styles.info}>
             <p className={styles.meta}>Profile</p>
-            <h1 className={styles.displayName} style={{ fontSize: user && user.username.length > 12 ? '2.5rem' : '3.5rem' }}>{user?.username}</h1>
+            <h1 className={styles.displayName} style={{ fontSize: user && user.username.length > 12 ? '2.5rem' : '3.5rem' }}>
+              {user?.username}
+              {isAdmin && (
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, background: 'rgba(29,185,84,0.2)', color: '#1db954', padding: '3px 10px', borderRadius: '999px', marginLeft: '12px', verticalAlign: 'middle' }}>
+                  Admin
+                </span>
+              )}
+            </h1>
             {user?.bio && (<p className={styles.bio}>{user.bio}</p>)}
             <p style={{ margin: 0, fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}><span style={{ color: '#fff', fontWeight: 700 }}>{publicCount}</span> Public Playlists · <span style={{ color: '#fff', fontWeight: 700 }}>{user?.followingCount ?? 0}</span> Following · <span style={{ color: '#fff', fontWeight: 700 }}>{user?.followerCount ?? 0}</span> Followers</p>
           </div>
@@ -145,7 +204,16 @@ export default function Profile() {
 
       <div className={styles.actionsBar}>
         <button onClick={openEdit} className={`${styles.btn} ${styles.editBtn}`} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#fff'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#535353'; }}>Edit profile</button>
-        <button onClick={() => navigate(-1)} className={`${styles.btn} ${styles.backBtn}`} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#fff'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#b3b3b3'; }}>Back</button>
+        {isAdmin && (
+          <button
+            onClick={() => navigate('/admin')}
+            className={`${styles.btn} ${styles.adminBtn}`}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1ed760'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1db954'; }}
+          >
+            Admin panel
+          </button>
+        )}
       </div>
 
       {editing && (
@@ -177,6 +245,34 @@ export default function Profile() {
                 <button type="submit" disabled={editLoading} className={styles.btn} style={{ padding: '10px 24px', border: 'none', backgroundColor: '#fff', color: '#000', fontWeight: 700, opacity: editLoading ? 0.7 : 1 }} onMouseEnter={(e) => { if (!editLoading) (e.currentTarget as HTMLElement).style.backgroundColor = '#e0e0e0'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#fff'; }}>{editLoading ? 'Saving...' : 'Save'}</button>
               </div>
             </form>
+
+            <div style={{ borderTop: '1px solid #333', marginTop: '1.5rem', paddingTop: '1.5rem' }}>
+              <h3 style={{ margin: '0 0 1rem', fontSize: '1rem', fontWeight: 700, color: '#fff' }}>Change Password</h3>
+              <form onSubmit={handleChangePassword}>
+                <div className={styles.formCol}>
+                  <label className={styles.formLabel}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#b3b3b3' }}>Current Password</span>
+                    <input type="password" value={pwCurrent} onChange={(e) => { setPwCurrent(e.target.value); setPwError(''); setPwSuccess(''); }} className={styles.formInput} onFocus={(e) => (e.currentTarget as HTMLElement).style.border = '1px solid #1db954'} onBlur={(e) => (e.currentTarget as HTMLElement).style.border = '1px solid #535353'} />
+                  </label>
+                  <label className={styles.formLabel}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#b3b3b3' }}>New Password</span>
+                    <input type="password" value={pwNew} onChange={(e) => { setPwNew(e.target.value); setPwError(''); setPwSuccess(''); }} className={styles.formInput} onFocus={(e) => (e.currentTarget as HTMLElement).style.border = '1px solid #1db954'} onBlur={(e) => (e.currentTarget as HTMLElement).style.border = '1px solid #535353'} />
+                  </label>
+                  <label className={styles.formLabel}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#b3b3b3' }}>Confirm New Password</span>
+                    <input type="password" value={pwConfirm} onChange={(e) => { setPwConfirm(e.target.value); setPwError(''); setPwSuccess(''); }} className={styles.formInput} onFocus={(e) => (e.currentTarget as HTMLElement).style.border = '1px solid #1db954'} onBlur={(e) => (e.currentTarget as HTMLElement).style.border = '1px solid #535353'} />
+                  </label>
+                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: '#535353' }}>
+                    Min 8 characters · At least 1 uppercase letter · At least 1 digit
+                  </p>
+                </div>
+                {pwError && (<p style={{ margin: '0.75rem 0 0', fontSize: '0.8rem', color: '#e53e3e' }}>{pwError}</p>)}
+                {pwSuccess && (<p style={{ margin: '0.75rem 0 0', fontSize: '0.8rem', color: '#1db954' }}>{pwSuccess}</p>)}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                  <button type="submit" disabled={pwLoading} className={styles.btn} style={{ padding: '10px 24px', border: 'none', backgroundColor: '#1db954', color: '#000', fontWeight: 700, opacity: pwLoading ? 0.7 : 1 }} onMouseEnter={(e) => { if (!pwLoading) (e.currentTarget as HTMLElement).style.backgroundColor = '#1ed760'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1db954'; }}>{pwLoading ? 'Updating...' : 'Change Password'}</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

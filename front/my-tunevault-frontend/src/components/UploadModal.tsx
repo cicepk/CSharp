@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import apiService from '../services/ApiService';
 import styles from './UploadModal.module.css';
 
@@ -15,6 +15,21 @@ function getMediaType(file: File): 1 | 2 | null {
   if (AUDIO_EXTS.includes(ext)) return 1;
   if (VIDEO_EXTS.includes(ext)) return 2;
   return null;
+}
+
+function getDuration(file: File, mediaType: 1 | 2): Promise<number> {
+  return new Promise(resolve => {
+    const el = mediaType === 2
+      ? document.createElement('video')
+      : document.createElement('audio');
+    el.preload = 'metadata';
+    el.onloadedmetadata = () => {
+      URL.revokeObjectURL(el.src);
+      resolve(Math.round(el.duration));
+    };
+    el.onerror = () => resolve(0);
+    el.src = URL.createObjectURL(file);
+  });
 }
 
 function formatBytes(bytes: number): string {
@@ -34,6 +49,21 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
+  const [duration, setDuration] = useState(0);
+  const [genres, setGenres] = useState<{ id: string; name: string }[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+
+  useEffect(() => {
+    apiService.getGenres().then(setGenres);
+  }, []);
+
+  const toggleGenre = (id: string) => {
+    setSelectedGenres(prev =>
+      prev.includes(id)
+        ? prev.filter(g => g !== id)
+        : prev.length < 3 ? [...prev, id] : prev
+    );
+  };
 
   const mediaInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -47,6 +77,7 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
     setError('');
     setMediaFile(file);
     setMediaType(detected);
+    getDuration(file, detected).then(setDuration);
     // Auto-fill title from filename (remove extension)
     const nameNoExt = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
     setTitle(nameNoExt);
@@ -85,6 +116,8 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
         mediaType,
         coverFile ?? undefined,
         setProgress,
+        selectedGenres,
+        duration,
       );
       setDone(true);
       setTimeout(() => { onUploaded(); onClose(); }, 1200);
@@ -233,6 +266,39 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
                   className={`${styles.inputField} ${uploading ? styles.disabled : ''}`}
                 />
               </div>
+
+              {/* Genre picker */}
+              {genres.length > 0 && (
+                <div>
+                  <p style={{ margin: '0 0 8px', fontSize: '0.8rem', color: '#b3b3b3' }}>
+                    Genres <span style={{ color: '#535353' }}>(chọn tối đa 3)</span>
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {genres.map(g => (
+                      <button
+                        key={g.id}
+                        type="button"
+                        disabled={uploading}
+                        onClick={() => toggleGenre(g.id)}
+                        style={{
+                          padding: '4px 14px',
+                          borderRadius: '20px',
+                          border: '1px solid',
+                          fontSize: '0.78rem',
+                          fontWeight: 500,
+                          cursor: uploading ? 'default' : 'pointer',
+                          transition: 'all 0.15s',
+                          backgroundColor: selectedGenres.includes(g.id) ? '#1db954' : 'transparent',
+                          borderColor: selectedGenres.includes(g.id) ? '#1db954' : '#535353',
+                          color: selectedGenres.includes(g.id) ? '#000' : '#b3b3b3',
+                        }}
+                      >
+                        {g.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Media type toggle */}
               <div className={styles.mediaTypeGroup}>

@@ -36,7 +36,7 @@ public class UpdateMediaHandler : IRequestHandler<UpdateMediaCommand, MediaDto>
             DurationSeconds = item.DurationSeconds,
             OwnerId         = item.OwnerId,
             FilePath        = $"{command.BaseUrl}/api/mediaitems/{item.Id}/stream",
-            CoverPath       = item.CoverPath != null ? $"{command.BaseUrl}{item.CoverPath}" : null,
+            CoverPath       = item.CoverPath != null ? (item.CoverPath.StartsWith("http") ? item.CoverPath : $"{command.BaseUrl}{item.CoverPath}") : null,
             CreatedAt       = item.CreatedAt
         };
     }

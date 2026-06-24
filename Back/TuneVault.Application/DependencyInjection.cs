@@ -1,3 +1,4 @@
+using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using TuneVault.Application.Behaviours;
@@ -11,11 +12,10 @@ public static class DependencyInjection
     {
         var assembly = typeof(MediaShareDto).Assembly;
 
-        // MediatR — scan toàn bộ handlers trong Application layer
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
 
-        // Pipeline: ValidationBehaviour chạy trước mọi MediatR Handler
-        // Khi thêm Validator mới, chúng tự được inject vào IEnumerable<IValidator<TRequest>>
+        services.AddValidatorsFromAssembly(assembly);
+
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
 
         return services;

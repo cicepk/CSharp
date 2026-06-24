@@ -24,4 +24,10 @@
     </Content>
   </ItemGroup>
 
+  <!-- Exclude user-uploaded runtime files — MSBuild cannot handle filenames with commas -->
+  <ItemGroup>
+    <Content Remove="wwwroot\music\**" />
+    <Content Remove="wwwroot\uploads\**" />
+  </ItemGroup>
+
 </Project>

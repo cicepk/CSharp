@@ -217,34 +217,34 @@ export default function Player() {
       <div className={styles.center}>
         <div className={styles.controlsRow}>
 
-          {/* Shuffle */}
-          <button
-            onClick={toggleShuffle}
-            title="Shuffle"
-            className={styles.iconControl}
-            style={{ opacity: isShuffle ? 1 : 0.5 }}
-          >
-            <img src={shuffleImg} alt="Shuffle" style={{ width: '16px', height: '16px' }} />
-            {isShuffle && (
-              <span style={{
-                position: 'absolute', bottom: '-4px', left: '50%',
-                transform: 'translateX(-50%)',
-                width: '4px', height: '4px', borderRadius: '50%',
-                backgroundColor: '#1db954',
-              }} />
-            )}
-          </button>
-
-          {/* Previous */}
-          <button
-            onClick={playPrevious}
-            disabled={!hasPrev}
-            title="Previous"
-            className={styles.prevNext}
-            style={{ opacity: hasPrev ? 0.7 : 0.3, cursor: hasPrev ? 'pointer' : 'default' }}
-          >
-            <img src={previousImg} alt="Previous" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
-          </button>
+          {/* Shuffle + Previous */}
+          <div className={styles.controlsLeft}>
+            <button
+              onClick={toggleShuffle}
+              title="Shuffle"
+              className={styles.iconControl}
+              style={{ opacity: isShuffle ? 1 : 0.5 }}
+            >
+              <img src={shuffleImg} alt="Shuffle" style={{ width: '16px', height: '16px' }} />
+              {isShuffle && (
+                <span style={{
+                  position: 'absolute', bottom: '-4px', left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '4px', height: '4px', borderRadius: '50%',
+                  backgroundColor: '#1db954',
+                }} />
+              )}
+            </button>
+            <button
+              onClick={playPrevious}
+              disabled={!hasPrev}
+              title="Previous"
+              className={styles.prevNext}
+              style={{ opacity: hasPrev ? 0.7 : 0.3, cursor: hasPrev ? 'pointer' : 'default' }}
+            >
+              <img src={previousImg} alt="Previous" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
+            </button>
+          </div>
 
           {/* Play/Pause */}
           <button
@@ -259,52 +259,51 @@ export default function Player() {
             />
           </button>
 
-          {/* Next */}
-          <button
-            onClick={playNext}
-            disabled={!hasNext}
-            title="Next"
-            className={styles.prevNext}
-            style={{ opacity: hasNext ? 0.7 : 0.3, cursor: hasNext ? 'pointer' : 'default' }}
-          >
-            <img src={nextImg} alt="Next" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
-          </button>
+          {/* Next + Repeat + Favorite */}
+          <div className={styles.controlsRight}>
+            <button
+              onClick={playNext}
+              disabled={!hasNext}
+              title="Next"
+              className={styles.prevNext}
+              style={{ opacity: hasNext ? 0.7 : 0.3, cursor: hasNext ? 'pointer' : 'default' }}
+            >
+              <img src={nextImg} alt="Next" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
+            </button>
+            <button
+              onClick={toggleRepeat}
+              title="Repeat"
+              className={styles.iconControl}
+              style={{ opacity: isRepeat ? 1 : 0.5 }}
+            >
+              <img src={repeatImg} alt="Repeat" style={{ width: '16px', height: '16px' }} />
+              {isRepeat && (
+                <span style={{
+                  position: 'absolute', bottom: '-4px', left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '4px', height: '4px', borderRadius: '50%',
+                  backgroundColor: '#1db954',
+                }} />
+              )}
+            </button>
+            <button
+              onClick={handleToggleFavourite}
+              title={isFav ? 'Unfavorite' : 'Favorite'}
+              className={styles.iconControl}
+              style={{ color: isFav ? '#e0245e' : undefined }}
+            >
+              {isFav ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#e0245e" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 21s-7.333-4.534-9.333-7.192C.667 11.587 2.04 6.5 6.2 5.02 8.01 4.346 9.91 5.04 12 7.02c2.09-1.98 3.99-2.674 5.8-1.999C21.96 6.5 23.333 11.587 21.333 13.808 19.333 16.466 12 21 12 21z" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" color="#b3b3b3">
+                  <path d="M20.8 13.8C18.8 16.5 12 21 12 21s-6.8-4.5-8.8-7.2C1.2 11.6 2.6 6.5 6.8 5.1 8.6 4.5 10.5 5.2 12 7c1.5-1.8 3.4-2.5 5.2-1.9 4.2 1.4 5.6 6.5 3.6 8.7z" />
+                </svg>
+              )}
+            </button>
+          </div>
 
-          {/* Repeat */}
-          <button
-            onClick={toggleRepeat}
-            title="Repeat"
-            className={styles.iconControl}
-            style={{ opacity: isRepeat ? 1 : 0.5 }}
-          >
-            <img src={repeatImg} alt="Repeat" style={{ width: '16px', height: '16px' }} />
-            {isRepeat && (
-              <span style={{
-                position: 'absolute', bottom: '-4px', left: '50%',
-                transform: 'translateX(-50%)',
-                width: '4px', height: '4px', borderRadius: '50%',
-                backgroundColor: '#1db954',
-              }} />
-            )}
-          </button>
-
-          {/* Favorite */}
-          <button
-            onClick={handleToggleFavourite}
-            title={isFav ? 'Unfavorite' : 'Favorite'}
-            className={styles.iconControl}
-            style={{ color: isFav ? '#e0245e' : undefined }}
-          >
-            {isFav ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#e0245e" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 21s-7.333-4.534-9.333-7.192C.667 11.587 2.04 6.5 6.2 5.02 8.01 4.346 9.91 5.04 12 7.02c2.09-1.98 3.99-2.674 5.8-1.999C21.96 6.5 23.333 11.587 21.333 13.808 19.333 16.466 12 21 12 21z" />
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" color="#b3b3b3">
-                <path d="M20.8 13.8C18.8 16.5 12 21 12 21s-6.8-4.5-8.8-7.2C1.2 11.6 2.6 6.5 6.8 5.1 8.6 4.5 10.5 5.2 12 7c1.5-1.8 3.4-2.5 5.2-1.9 4.2 1.4 5.6 6.5 3.6 8.7z" />
-              </svg>
-            )}
-          </button>
         </div>
         {/* Progress bar + time */}
         <div className={styles.progressWrapper}>

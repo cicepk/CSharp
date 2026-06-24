@@ -15,9 +15,12 @@ public class MediaItemRepository : IMediaItemRepository
 
     public async Task<IReadOnlyList<MediaItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
+        // left join de tranh ambigous column OwnerId (cung ten)
         const string sql = @"
-            SELECT Id, Title, Artist, FilePath, CoverPath, MediaType, DurationSeconds, CreatedAt, OwnerId
-            FROM MediaItems";
+            SELECT m.Id, m.Title, m.Artist, m.FilePath, m.CoverPath, m.MediaType, m.DurationSeconds, m.CreatedAt, m.OwnerId,
+                   u.UserName AS OwnerUsername
+            FROM MediaItems m
+            LEFT JOIN UserProfiles u ON u.Id = m.OwnerId";
 
         using (var connection = _connectionFactory.CreateConnection())
         {
@@ -30,9 +33,11 @@ public class MediaItemRepository : IMediaItemRepository
     public async Task<MediaItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         const string sql = @"
-            SELECT Id, Title, Artist, FilePath, CoverPath, MediaType, DurationSeconds, CreatedAt, OwnerId
-            FROM MediaItems
-            WHERE Id = @Id";
+            SELECT m.Id, m.Title, m.Artist, m.FilePath, m.CoverPath, m.MediaType, m.DurationSeconds, m.CreatedAt, m.OwnerId,
+                   u.UserName AS OwnerUsername
+            FROM MediaItems m
+            LEFT JOIN UserProfiles u ON u.Id = m.OwnerId
+            WHERE m.Id = @Id";
 
         using (var connection = _connectionFactory.CreateConnection())
         {
@@ -133,6 +138,18 @@ public class MediaItemRepository : IMediaItemRepository
                 tx.Rollback();
                 throw;
             }
+        }
+    }
+
+    public async Task<IReadOnlyList<Genre>> GetAllGenresAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = "SELECT Id, Name, Description FROM Genres ORDER BY Name";
+
+        using (var connection = _connectionFactory.CreateConnection())
+        {
+            var command = new CommandDefinition(sql, cancellationToken: cancellationToken);
+            var genres = await connection.QueryAsync<Genre>(command);
+            return genres.ToList();
         }
     }
 
@@ -243,6 +260,44 @@ public class MediaItemRepository : IMediaItemRepository
             var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
             var playHistory = await connection.QueryAsync<PlayHistory>(command);
             return playHistory.ToList();
+        }
+    }
+
+    public async Task<IReadOnlyList<MediaItem>> GetRecommendationsByGenreAsync(Guid userId, int limit = 20, CancellationToken cancellationToken = default)
+    {
+        // Lấy media cùng top 3 genre user nghe nhiều nhất,
+        // ưu tiên bài ít nghe nhất lên đầu (không loại bài đã nghe)
+        const string sql = @"
+            SELECT TOP (@Limit)
+                m.Id, m.Title, m.Artist, m.FilePath, m.CoverPath, m.MediaType,
+                m.DurationSeconds, m.CreatedAt, m.OwnerId,
+                u.UserName AS OwnerUsername
+            FROM MediaItems m
+            LEFT JOIN UserProfiles u ON u.Id = m.OwnerId
+            INNER JOIN MediaGenres mg ON mg.MediaItemId = m.Id
+            WHERE mg.GenreId IN (
+                SELECT TOP 3 sub.GenreId
+                FROM (
+                    SELECT mg2.GenreId, COUNT(*) AS cnt
+                    FROM PlayHistory ph
+                    INNER JOIN MediaGenres mg2 ON mg2.MediaItemId = ph.MediaItemId
+                    WHERE ph.UserId = @UserId
+                    GROUP BY mg2.GenreId
+                ) sub
+                ORDER BY sub.cnt DESC
+            )
+            GROUP BY m.Id, m.Title, m.Artist, m.FilePath, m.CoverPath, m.MediaType,
+                     m.DurationSeconds, m.CreatedAt, m.OwnerId, u.UserName
+            ORDER BY
+                (SELECT COUNT(*) FROM PlayHistory ph3
+                 WHERE ph3.UserId = @UserId AND ph3.MediaItemId = m.Id) ASC,
+                NEWID()";
+
+        using (var connection = _connectionFactory.CreateConnection())
+        {
+            var command = new CommandDefinition(sql, new { UserId = userId, Limit = limit }, cancellationToken: cancellationToken);
+            var items = await connection.QueryAsync<MediaItem>(command);
+            return items.ToList();
         }
     }
 

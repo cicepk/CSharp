@@ -1,3 +1,4 @@
+using TuneVault.Application.DTOs.Admin;
 using TuneVault.Domain.Entities;
 
 namespace TuneVault.Application.Interfaces;
@@ -21,4 +22,10 @@ public interface IUserRepository
     Task<bool> ExistsAsync(Guid userId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<UserProfile>> SearchAsync(string query, int limit = 10, CancellationToken cancellationToken = default);
+
+    Task<bool> UpdatePasswordHashAsync(Guid userId, string newPasswordHash, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AdminUserDto>> GetAllWithUploadCountAsync(CancellationToken cancellationToken = default);
+
+    Task<int> GetTotalUsersCountAsync(CancellationToken cancellationToken = default);
 }

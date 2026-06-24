@@ -13,6 +13,7 @@ namespace TuneVault.Domain.Entities
         public DateTime CreatedAt {get; set;} = DateTime.UtcNow;
 
         public Guid OwnerId {get; set;}
+        public string? OwnerUsername { get; set; }
         public UserProfile Owner {get; set;} = null!;
         //trung gian
         public ICollection<PlaylistItem> PlaylistItems {get; set;} = new List<PlaylistItem>();

@@ -18,30 +18,33 @@ public class UploadMediaHandler : IRequestHandler<UploadMediaCommand, MediaDto>
     {
         var mediaItem = new MediaItem
         {
-            Id              = Guid.NewGuid(),
-            Title           = command.Title.Trim(),
-            Artist          = command.Artist.Trim(),
-            FilePath        = command.FilePath,
-            CoverPath       = command.CoverPath,
-            MediaType       = (Domain.Enums.MediaType)command.MediaType,
-            DurationSeconds = 0,
-            OwnerId         = command.OwnerId,
-            CreatedAt       = DateTime.UtcNow
+            Id = Guid.NewGuid(),
+            Title = command.Title.Trim(),
+            Artist = command.Artist.Trim(),
+            FilePath = command.FilePath,
+            CoverPath = command.CoverPath,
+            MediaType = (Domain.Enums.MediaType)command.MediaType,
+            DurationSeconds = command.DurationSeconds,
+            OwnerId = command.OwnerId,
+            CreatedAt = DateTime.UtcNow
         };
 
         await _mediaItemRepository.AddAsync(mediaItem, cancellationToken);
 
+        foreach (var genreId in command.GenreIds)
+            await _mediaItemRepository.AddMediaGenreAsync(mediaItem.Id, genreId, cancellationToken);
+
         return new MediaDto
         {
-            Id              = mediaItem.Id,
-            Title           = mediaItem.Title,
-            Artist          = mediaItem.Artist,
-            MediaType       = (int)mediaItem.MediaType,
+            Id = mediaItem.Id,
+            Title = mediaItem.Title,
+            Artist = mediaItem.Artist,
+            MediaType = (int)mediaItem.MediaType,
             DurationSeconds = mediaItem.DurationSeconds,
-            OwnerId         = mediaItem.OwnerId,
-            FilePath        = $"{command.BaseUrl}/api/mediaitems/{mediaItem.Id}/stream",
-            CoverPath       = mediaItem.CoverPath != null ? $"{command.BaseUrl}{mediaItem.CoverPath}" : null,
-            CreatedAt       = mediaItem.CreatedAt
+            OwnerId = mediaItem.OwnerId,
+            FilePath = $"{command.BaseUrl}/api/mediaitems/{mediaItem.Id}/stream",
+            CoverPath = mediaItem.CoverPath != null ? (mediaItem.CoverPath.StartsWith("http") ? mediaItem.CoverPath : $"{command.BaseUrl}{mediaItem.CoverPath}") : null,
+            CreatedAt = mediaItem.CreatedAt
         };
     }
 }

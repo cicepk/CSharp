@@ -236,7 +236,15 @@ public class DataSeeder : IDataSeeder
 
                         // Seed media items
                         await SeedMediaItemsAsync(connection, transaction);
-                        Console.WriteLine(" Seed 10 media items (6 audio + 4 video) thành công");
+                        Console.WriteLine(" Seed 13 media items (10 audio + 3 video) thành công");
+
+                        // Seed genres
+                        await SeedGenresAsync(connection, transaction);
+                        Console.WriteLine(" Seed 8 genres thành công");
+
+                        // Seed media-genre links
+                        await SeedMediaGenresAsync(connection, transaction);
+                        Console.WriteLine(" Seed 26 media-genre links thành công");
 
                         // Seed playlists
                         await SeedPlaylistsAsync(connection, transaction);
@@ -287,25 +295,27 @@ public class DataSeeder : IDataSeeder
     private async Task SeedUsersAsync(IDbConnection connection, IDbTransaction transaction)
     {
         const string sql = @"
-            INSERT INTO UserProfiles (Id, UserName, Email, PasswordHash, CreatedAt)
-            VALUES (@Id, @UserName, @Email, @PasswordHash, @CreatedAt)";
+            INSERT INTO UserProfiles (Id, UserName, Email, PasswordHash, CreatedAt, Role)
+            VALUES (@Id, @UserName, @Email, @PasswordHash, @CreatedAt, @Role)";
 
         // Password chung cho cả 2 users: Password123
         var passwordHash = BCrypt.Net.BCrypt.HashPassword("Password123");
 
-        var users = new List<(Guid id, string userName, string email, DateTime createdAt)>
+        var users = new List<(Guid id, string userName, string email, DateTime createdAt, int role)>
         {
             (
                 new Guid("550e8400-e29b-41d4-a716-446655440001"),
                 "admin",
                 "admin@tunevault.com",
-                new DateTime(2026, 1, 1, 10, 0, 0)
+                new DateTime(2026, 1, 1, 10, 0, 0),
+                2  // Admin
             ),
             (
                 new Guid("550e8400-e29b-41d4-a716-446655440002"),
                 "john_music",
                 "john@tunevault.com",
-                new DateTime(2026, 1, 5, 14, 30, 0)
+                new DateTime(2026, 1, 5, 14, 30, 0),
+                1  // User
             )
         };
 
@@ -317,7 +327,8 @@ public class DataSeeder : IDataSeeder
                 UserName = user.userName,
                 Email = user.email,
                 PasswordHash = passwordHash,
-                CreatedAt = user.createdAt
+                CreatedAt = user.createdAt,
+                Role = user.role
             };
 
             var command = new CommandDefinition(sql, parameters, transaction: transaction);
@@ -325,132 +336,122 @@ public class DataSeeder : IDataSeeder
         }
     }
 
-    /// 6 audio items + 4 video items
+    /// 10 audio items — files baked into Docker image under wwwroot/music/
     private async Task SeedMediaItemsAsync(IDbConnection connection, IDbTransaction transaction)
     {
         const string sql = @"
-            INSERT INTO MediaItems (Id, Title, Artist, FilePath, MediaType, DurationSeconds, CreatedAt, OwnerId)
-            VALUES (@Id, @Title, @Artist, @FilePath, @MediaType, @DurationSeconds, @CreatedAt, @OwnerId)";
+            INSERT INTO MediaItems (Id, Title, Artist, FilePath, CoverPath, MediaType, DurationSeconds, CreatedAt, OwnerId)
+            VALUES (@Id, @Title, @Artist, @FilePath, @CoverPath, @MediaType, @DurationSeconds, @CreatedAt, @OwnerId)";
 
-        // Admin user ID
         var adminId = new Guid("550e8400-e29b-41d4-a716-446655440001");
 
-        // Tạo list media items
         var mediaItems = new List<dynamic>
         {
-            // ===== AUDIO ITEMS (MediaType = 1) =====
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440001"),
-                Title = "Blinding Lights",
-                Artist = "The Weeknd",
-                FilePath = "/music/audio/blinding-lights.mp3",
-                MediaType = 1,  // Audio
-                DurationSeconds = 200,
-                CreatedAt = new DateTime(2026, 1, 10, 8, 0, 0),
-                OwnerId = adminId
+                Title = "I Can't Feel", Artist = "Aylex",
+                FilePath  = "/music/audio/Aylex - I Can't Feel (freetouse.com).mp3",
+                CoverPath = "/music/images/Black  Mixtape Cover  Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 180,
+                CreatedAt = new DateTime(2026, 1, 10, 8, 0, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440002"),
-                Title = "Shape of You",
-                Artist = "Ed Sheeran",
-                FilePath = "/music/audio/shape-of-you.mp3",
-                MediaType = 1,
-                DurationSeconds = 234,
-                CreatedAt = new DateTime(2026, 1, 11, 9, 30, 0),
-                OwnerId = adminId
+                Title = "Turn It Louder", Artist = "Aylex",
+                FilePath  = "/music/audio/Aylex - Turn It Louder (freetouse.com).mp3",
+                CoverPath = "/music/images/Neon Music Album Cover Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 195,
+                CreatedAt = new DateTime(2026, 1, 11, 9, 30, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440003"),
-                Title = "Uptown Funk",
-                Artist = "Mark Ronson ft. Bruno Mars",
-                FilePath = "/music/audio/uptown-funk.mp3",
-                MediaType = 1,
-                DurationSeconds = 269,
-                CreatedAt = new DateTime(2026, 1, 12, 10, 15, 0),
-                OwnerId = adminId
+                Title = "All Night", Artist = "Burgundy",
+                FilePath  = "/music/audio/Burgundy - All Night (freetouse.com).mp3",
+                CoverPath = "/music/images/Red Neon Music Album Cover Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 210,
+                CreatedAt = new DateTime(2026, 1, 12, 10, 15, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440004"),
-                Title = "Perfect",
-                Artist = "Ed Sheeran",
-                FilePath = "/music/audio/perfect.mp3",
-                MediaType = 1,
-                DurationSeconds = 263,
-                CreatedAt = new DateTime(2026, 1, 13, 11, 0, 0),
-                OwnerId = adminId
+                Title = "Clarity", Artist = "Damtaro",
+                FilePath  = "/music/audio/Damtaro - Clarity (freetouse.com).mp3",
+                CoverPath = "/music/images/Blue Inception Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 225,
+                CreatedAt = new DateTime(2026, 1, 13, 11, 0, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440005"),
-                Title = "Bohemian Rhapsody",
-                Artist = "Queen",
-                FilePath = "/music/audio/bohemian-rhapsody.mp3",
-                MediaType = 1,
-                DurationSeconds = 354,
-                CreatedAt = new DateTime(2026, 1, 14, 12, 30, 0),
-                OwnerId = adminId
+                Title = "Wandering", Artist = "Epic Spectrum",
+                FilePath  = "/music/audio/Epic Spectrum - Wandering (freetouse.com).mp3",
+                CoverPath = "/music/images/Purple Abstract Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 240,
+                CreatedAt = new DateTime(2026, 1, 14, 12, 30, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440006"),
-                Title = "Hotel California",
-                Artist = "Eagles",
-                FilePath = "/music/audio/hotel-california.mp3",
-                MediaType = 1,
-                DurationSeconds = 391,
-                CreatedAt = new DateTime(2026, 1, 15, 13, 45, 0),
-                OwnerId = adminId
+                Title = "End of Times", Artist = "Guillermo Guareschi",
+                FilePath  = "/music/audio/Guillermo Guareschi - End of Times (freetouse.com).mp3",
+                CoverPath = "/music/images/Black Indie Rock Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 255,
+                CreatedAt = new DateTime(2026, 1, 15, 13, 45, 0), OwnerId = adminId
             },
-
-            // ===== VIDEO ITEMS (MediaType = 2) =====
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440007"),
-                Title = "Levitating - Official Music Video",
-                Artist = "Dua Lipa",
-                FilePath = "/music/video/levitating-mv.mp4",
-                MediaType = 2,  // Video
-                DurationSeconds = 203,
-                CreatedAt = new DateTime(2026, 1, 16, 14, 0, 0),
-                OwnerId = adminId
+                Title = "Memories", Artist = "Lukrembo",
+                FilePath  = "/music/audio/Lukrembo - Memories (freetouse.com).mp3",
+                CoverPath = "/music/images/Pink Modern  Minimal Music Album Cover Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 188,
+                CreatedAt = new DateTime(2026, 1, 16, 14, 0, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440008"),
-                Title = "As It Was - Live Performance",
-                Artist = "Harry Styles",
-                FilePath = "/music/video/as-it-was-live.mp4",
-                MediaType = 2,
-                DurationSeconds = 180,
-                CreatedAt = new DateTime(2026, 1, 17, 15, 20, 0),
-                OwnerId = adminId
+                Title = "Kyoto", Artist = "Nebulite",
+                FilePath  = "/music/audio/Nebulite - Kyoto (freetouse.com).mp3",
+                CoverPath = "/music/images/Pop Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 202,
+                CreatedAt = new DateTime(2026, 1, 17, 15, 20, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440009"),
-                Title = "Setlist Concert 2025",
-                Artist = "Taylor Swift",
-                FilePath = "/music/video/taylor-concert-2025.mp4",
-                MediaType = 2,
-                DurationSeconds = 5400,
-                CreatedAt = new DateTime(2026, 1, 18, 16, 30, 0),
-                OwnerId = adminId
+                Title = "Deep Within", Artist = "Sunborn",
+                FilePath  = "/music/audio/Sunborn - Deep Within (freetouse.com).mp3",
+                CoverPath = "/music/images/Square abstract album cover template - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 218,
+                CreatedAt = new DateTime(2026, 1, 18, 16, 30, 0), OwnerId = adminId
             },
-            new
-            {
+            new {
                 Id = new Guid("660e8400-e29b-41d4-a716-446655440010"),
-                Title = "Making Of Album - Behind The Scenes",
-                Artist = "The Weeknd",
-                FilePath = "/music/video/weeknd-bts.mp4",
-                MediaType = 2,
-                DurationSeconds = 720,
-                CreatedAt = new DateTime(2026, 1, 19, 17, 15, 0),
-                OwnerId = adminId
-            }
+                Title = "Final Scene", Artist = "Walen",
+                FilePath  = "/music/audio/Walen - Final Scene (freetouse.com).mp3",
+                CoverPath = "/music/images/Black Floral Illustrative Album Cover - Made with PosterMyWall.jpg",
+                MediaType = 1, DurationSeconds = 230,
+                CreatedAt = new DateTime(2026, 1, 19, 17, 15, 0), OwnerId = adminId
+            },
+            // --- Video items ---
+            new {
+                Id = new Guid("660e8400-e29b-41d4-a716-446655440011"),
+                Title = "Here With Me", Artist = "d4vd",
+                FilePath  = "/music/video/d4vd - Here With Me .mp4",
+                CoverPath = "/music/images/here with me.png",
+                MediaType = 2, DurationSeconds = 225,
+                CreatedAt = new DateTime(2026, 1, 20, 10, 0, 0), OwnerId = adminId
+            },
+            new {
+                Id = new Guid("660e8400-e29b-41d4-a716-446655440012"),
+                Title = "Die With A Smile", Artist = "Lady Gaga, Bruno Mars",
+                FilePath  = "/music/video/Lady Gaga, Bruno Mars - Die With A Smile.mp4",
+                CoverPath = "/music/images/die with a smile.png",
+                MediaType = 2, DurationSeconds = 253,
+                CreatedAt = new DateTime(2026, 1, 20, 10, 30, 0), OwnerId = adminId
+            },
+            new {
+                Id = new Guid("660e8400-e29b-41d4-a716-446655440013"),
+                Title = "Blank Space", Artist = "Taylor Swift",
+                FilePath  = "/music/video/Taylor Swift - Blank Space.mp4",
+                CoverPath = "/music/images/Taylor_Swift_-_Blank_Space.png",
+                MediaType = 2, DurationSeconds = 231,
+                CreatedAt = new DateTime(2026, 1, 20, 11, 0, 0), OwnerId = adminId
+            },
         };
 
         // Insert từng media item
@@ -678,6 +679,102 @@ public class DataSeeder : IDataSeeder
         foreach (var notification in notifications)
         {
             var command = new CommandDefinition(sql, notification, transaction: transaction);
+            await connection.ExecuteAsync(command);
+        }
+    }
+
+    /// Seed 8 genres
+    private async Task SeedGenresAsync(IDbConnection connection, IDbTransaction transaction)
+    {
+        const string sql = @"
+            INSERT INTO Genres (Id, Name, Description)
+            VALUES (@Id, @Name, @Description)";
+
+        var genres = new List<dynamic>
+        {
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440001"), Name = "Pop",        Description = "Popular music" },
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440002"), Name = "Electronic", Description = "Electronic / synth music" },
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440003"), Name = "Indie",      Description = "Independent artists" },
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440004"), Name = "Chill",      Description = "Relaxing, lo-fi vibes" },
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440005"), Name = "Rock",       Description = "Rock music" },
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440006"), Name = "R&B",        Description = "Rhythm and Blues" },
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440007"), Name = "Lo-fi",      Description = "Lo-fi hip hop beats" },
+            new { Id = new Guid("aa0e8400-e29b-41d4-a716-446655440008"), Name = "Cinematic",  Description = "Epic, orchestral, film music" },
+        };
+
+        foreach (var genre in genres)
+        {
+            var command = new CommandDefinition(sql, genre, transaction: transaction);
+            await connection.ExecuteAsync(command);
+        }
+    }
+
+    /// Seed genre assignments cho 13 media items (26 links)
+    private async Task SeedMediaGenresAsync(IDbConnection connection, IDbTransaction transaction)
+    {
+        const string sql = @"
+            INSERT INTO MediaGenres (MediaItemId, GenreId, AddedAt)
+            VALUES (@MediaItemId, @GenreId, @AddedAt)";
+
+        // Genre GUIDs
+        var pop        = new Guid("aa0e8400-e29b-41d4-a716-446655440001");
+        var electronic = new Guid("aa0e8400-e29b-41d4-a716-446655440002");
+        var indie      = new Guid("aa0e8400-e29b-41d4-a716-446655440003");
+        var chill      = new Guid("aa0e8400-e29b-41d4-a716-446655440004");
+        var rock       = new Guid("aa0e8400-e29b-41d4-a716-446655440005");
+        var rnb        = new Guid("aa0e8400-e29b-41d4-a716-446655440006");
+        var lofi       = new Guid("aa0e8400-e29b-41d4-a716-446655440007");
+        var cinematic  = new Guid("aa0e8400-e29b-41d4-a716-446655440008");
+
+        var addedAt = new DateTime(2026, 1, 10, 8, 0, 0);
+
+        var links = new List<(Guid mediaId, Guid genreId)>
+        {
+            // 001 "I Can't Feel" — Electronic, Chill
+            (new Guid("660e8400-e29b-41d4-a716-446655440001"), electronic),
+            (new Guid("660e8400-e29b-41d4-a716-446655440001"), chill),
+            // 002 "Turn It Louder" — Electronic, Pop
+            (new Guid("660e8400-e29b-41d4-a716-446655440002"), electronic),
+            (new Guid("660e8400-e29b-41d4-a716-446655440002"), pop),
+            // 003 "All Night" — Pop, R&B
+            (new Guid("660e8400-e29b-41d4-a716-446655440003"), pop),
+            (new Guid("660e8400-e29b-41d4-a716-446655440003"), rnb),
+            // 004 "Clarity" — Electronic, Chill
+            (new Guid("660e8400-e29b-41d4-a716-446655440004"), electronic),
+            (new Guid("660e8400-e29b-41d4-a716-446655440004"), chill),
+            // 005 "Wandering" — Electronic, Indie
+            (new Guid("660e8400-e29b-41d4-a716-446655440005"), electronic),
+            (new Guid("660e8400-e29b-41d4-a716-446655440005"), indie),
+            // 006 "End of Times" — Rock, Cinematic
+            (new Guid("660e8400-e29b-41d4-a716-446655440006"), rock),
+            (new Guid("660e8400-e29b-41d4-a716-446655440006"), cinematic),
+            // 007 "Memories" — Chill, Lo-fi
+            (new Guid("660e8400-e29b-41d4-a716-446655440007"), chill),
+            (new Guid("660e8400-e29b-41d4-a716-446655440007"), lofi),
+            // 008 "Kyoto" — Electronic, Pop
+            (new Guid("660e8400-e29b-41d4-a716-446655440008"), electronic),
+            (new Guid("660e8400-e29b-41d4-a716-446655440008"), pop),
+            // 009 "Deep Within" — Electronic, Chill
+            (new Guid("660e8400-e29b-41d4-a716-446655440009"), electronic),
+            (new Guid("660e8400-e29b-41d4-a716-446655440009"), chill),
+            // 010 "Final Scene" — Indie, Cinematic
+            (new Guid("660e8400-e29b-41d4-a716-446655440010"), indie),
+            (new Guid("660e8400-e29b-41d4-a716-446655440010"), cinematic),
+            // 011 "Here With Me" — Indie, Pop
+            (new Guid("660e8400-e29b-41d4-a716-446655440011"), indie),
+            (new Guid("660e8400-e29b-41d4-a716-446655440011"), pop),
+            // 012 "Die With A Smile" — Pop, R&B
+            (new Guid("660e8400-e29b-41d4-a716-446655440012"), pop),
+            (new Guid("660e8400-e29b-41d4-a716-446655440012"), rnb),
+            // 013 "Blank Space" — Pop, Indie
+            (new Guid("660e8400-e29b-41d4-a716-446655440013"), pop),
+            (new Guid("660e8400-e29b-41d4-a716-446655440013"), indie),
+        };
+
+        foreach (var (mediaId, genreId) in links)
+        {
+            var parameters = new { MediaItemId = mediaId, GenreId = genreId, AddedAt = addedAt };
+            var command = new CommandDefinition(sql, parameters, transaction: transaction);
             await connection.ExecuteAsync(command);
         }
     }

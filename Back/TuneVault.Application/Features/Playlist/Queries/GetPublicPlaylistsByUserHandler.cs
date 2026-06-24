@@ -29,7 +29,7 @@ public class GetPublicPlaylistsByUserHandler : IRequestHandler<GetPublicPlaylist
                 IsPublic   = p.isPublic,
                 OwnerId    = p.OwnerId,
                 TrackCount = tracks.Count,
-                CoverUrl   = firstCover != null ? $"{request.BaseUrl}{firstCover}" : null,
+                CoverUrl   = firstCover != null ? (firstCover.StartsWith("http") ? firstCover : $"{request.BaseUrl}{firstCover}") : null,
                 CreatedAt  = p.CreatedAt
             });
         }

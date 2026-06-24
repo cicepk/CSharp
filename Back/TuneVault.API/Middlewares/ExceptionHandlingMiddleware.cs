@@ -66,6 +66,11 @@ public class ExceptionHandlingMiddleware
                 errors = [message];
                 break;
 
+            case OperationCanceledException:
+                // Client disconnected or request timed out — not a server error
+                context.Response.StatusCode = 499; // Client Closed Request
+                return;
+
             default:
                 _logger.LogError(exception, "❌ Unhandled exception: {Message}\n{StackTrace}", 
                     exception.Message, exception.StackTrace);

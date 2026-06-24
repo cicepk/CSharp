@@ -12,7 +12,9 @@ import VideoPlayer from './pages/VideoPlayer';
 import ShareInbox from './pages/ShareInbox';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import AdminPanel from './pages/AdminPanel';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import { MusicProvider } from './hooks/MusicContext';
 import { AuthProvider } from './contexts/AuthContext';
 
@@ -41,6 +43,7 @@ function App() {
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/video/:id" element={<VideoPlayer />} />
               <Route path="/share/inbox" element={<ShareInbox />} />
+              <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
             </Route>
           </Routes>
         </MusicProvider>

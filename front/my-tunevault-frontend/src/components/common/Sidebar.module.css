@@ -1,0 +1,79 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1.5rem 0;
+}
+
+.logoWrap {
+  padding: 0 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1db954;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.brandImg {
+  margin-right: 0.5rem;
+  vertical-align: middle;
+  width: 20px;
+  height: 20px;
+}
+
+.nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.navLink:hover {
+  background-color: #1b6334;
+  color: #000;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  color: #b3b3b3;
+  background-color: transparent;
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: 400;
+  transition: all 0.2s;
+}
+
+.active {
+  color: #000;
+  background-color: #1db954;
+  font-weight: 700;
+}
+
+.icon {
+  margin-right: 0.5rem;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.footer {
+  padding-top: 1rem;
+  border-top: 1px solid #282828;
+  padding: 1rem 1.5rem;
+  text-align: center;
+}
+
+.footerText {
+  font-size: 0.75rem;
+  color: #6b6b6b;
+  margin: 0;
+}
