@@ -7,6 +7,7 @@ import ShareModal from '../components/ShareModal';
 import styles from './Playlist.module.css';
 import playButtonImg from '../assets/icons/play-button.png';
 import pauseImg from '../assets/icons/pause.png';
+import shareIconImg from '../assets/icons/share.png';
 
 const FALLBACK_COVER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="160" height="160"%3E%3Crect fill="%23282828" width="160" height="160"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23535353" font-size="48"%3E%F0%9F%8E%B5%3C/text%3E%3C/svg%3E';
 
@@ -121,6 +122,7 @@ export default function PlaylistPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shareTarget, setShareTarget] = useState<{ id: string; title: string } | null>(null);
+  const [sharePlaylist, setSharePlaylist] = useState(false);
 
   const { currentSong, isPlaying, setQueue } = useMusic();
 
@@ -180,12 +182,29 @@ export default function PlaylistPage() {
           <h2 className={styles.playlistTitle}>{playlist.title}</h2>
           {playlist.description && (<p className={styles.playlistDesc}>{playlist.description}</p>)}
           <p className={styles.playCount}>{tracks.length} track{tracks.length !== 1 ? 's' : ''}</p>
-          {tracks.length > 0 && (
-            <button onClick={handlePlayAll} className={styles.playBtn} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1ed760'; (e.currentTarget as HTMLElement).style.transform = 'scale(1.03)'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1db954'; (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}>
-              <img src={playButtonImg} alt="Play" style={{ width: '14px', height: '14px' }} />
-              Play All
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {tracks.length > 0 && (
+              <button onClick={handlePlayAll} className={styles.playBtn} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1ed760'; (e.currentTarget as HTMLElement).style.transform = 'scale(1.03)'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1db954'; (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}>
+                <img src={playButtonImg} alt="Play" style={{ width: '14px', height: '14px' }} />
+                Play All
+              </button>
+            )}
+            <button
+              onClick={() => setSharePlaylist(true)}
+              title="Share Playlist"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 16px', borderRadius: '20px', border: '1px solid #535353',
+                background: 'transparent', color: '#ffffff', fontSize: '0.85rem',
+                cursor: 'pointer', transition: 'border-color 0.15s, color 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#fff'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#535353'; }}
+            >
+              <img src={shareIconImg} alt="" style={{ width: '14px', height: '14px', filter: 'brightness(0) invert(1)' }} />
+              Share Playlist
             </button>
-          )}
+          </div>
         </div>
       </div>
 
@@ -222,6 +241,10 @@ export default function PlaylistPage() {
 
       {shareTarget && (
         <ShareModal mediaItemId={shareTarget.id} title={shareTarget.title} onClose={() => setShareTarget(null)} />
+      )}
+
+      {sharePlaylist && id && playlist && (
+        <ShareModal playlistId={id} title={playlist.title} onClose={() => setSharePlaylist(false)} />
       )}
     </div>
   );
