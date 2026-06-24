@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend:
+    name: Build Backend (.NET 10)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore Back/TuneVault.slnx
+
+      - name: Build
+        run: dotnet build Back/TuneVault.slnx --no-restore --configuration Release
+
+  frontend:
+    name: Build Frontend (React/Vite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: front/my-tunevault-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: front/my-tunevault-frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: front/my-tunevault-frontend
+        run: npm run build
