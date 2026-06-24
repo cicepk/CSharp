@@ -265,9 +265,10 @@ public class MediaItemRepository : IMediaItemRepository
 
     public async Task<IReadOnlyList<MediaItem>> GetRecommendationsByGenreAsync(Guid userId, int limit = 20, CancellationToken cancellationToken = default)
     {
-        // Lấy media cùng genre với top 3 genre user nghe nhiều nhất, shuffle random, loại những media gần đây
+        // Lấy media cùng top 3 genre user nghe nhiều nhất,
+        // ưu tiên bài ít nghe nhất lên đầu (không loại bài đã nghe)
         const string sql = @"
-            SELECT DISTINCT TOP (@Limit)
+            SELECT TOP (@Limit)
                 m.Id, m.Title, m.Artist, m.FilePath, m.CoverPath, m.MediaType,
                 m.DurationSeconds, m.CreatedAt, m.OwnerId,
                 u.UserName AS OwnerUsername
@@ -285,13 +286,12 @@ public class MediaItemRepository : IMediaItemRepository
                 ) sub
                 ORDER BY sub.cnt DESC
             )
-            AND m.Id NOT IN (
-                SELECT TOP 30 ph2.MediaItemId
-                FROM PlayHistory ph2
-                WHERE ph2.UserId = @UserId
-                ORDER BY ph2.PlayedAt DESC
-            )
-            ORDER BY NEWID()";
+            GROUP BY m.Id, m.Title, m.Artist, m.FilePath, m.CoverPath, m.MediaType,
+                     m.DurationSeconds, m.CreatedAt, m.OwnerId, u.UserName
+            ORDER BY
+                (SELECT COUNT(*) FROM PlayHistory ph3
+                 WHERE ph3.UserId = @UserId AND ph3.MediaItemId = m.Id) ASC,
+                NEWID()";
 
         using (var connection = _connectionFactory.CreateConnection())
         {
