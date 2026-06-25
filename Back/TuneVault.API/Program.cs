@@ -111,7 +111,7 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "❌ Critical: Database initialization failed. The application may not work correctly.\nError: {Message}\n{StackTrace}", 
+        logger.LogError(ex, "Critical: Database initialization failed. The application may not work correctly.\nError: {Message}\n{StackTrace}",
             ex.Message, ex.StackTrace);
     }
 }

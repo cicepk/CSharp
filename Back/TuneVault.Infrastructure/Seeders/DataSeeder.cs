@@ -61,7 +61,7 @@ public class DataSeeder : IDataSeeder
     /// Initialize database schema by executing schema.sql
     private async Task InitializeDatabaseSchemaAsync()
     {
-        Console.WriteLine(" 📋 Creating database schema...");
+        Console.WriteLine("Creating database schema...");
 
         // Look for schema.sql next to the running assembly first (Docker / published mode),
         // then fall back to the dev-time directory navigation.
@@ -91,7 +91,7 @@ public class DataSeeder : IDataSeeder
 
         if (!System.IO.File.Exists(schemaPath))
         {
-            Console.WriteLine($" ⚠️  Schema file not found at: {schemaPath}");
+            Console.WriteLine($"Schema file not found at: {schemaPath}");
             throw new FileNotFoundException($"Schema file not found: {schemaPath}");
         }
 
@@ -104,7 +104,7 @@ public class DataSeeder : IDataSeeder
                 connection.Open();
                 
                 // First, disable all foreign key constraints
-                Console.WriteLine(" 🔓 Disabling foreign key constraints...");
+                Console.WriteLine("Disabling foreign key constraints...");
                 try
                 {
                     var cmd = new CommandDefinition("EXEC sp_MSForEachTable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL'");
@@ -116,7 +116,7 @@ public class DataSeeder : IDataSeeder
                 }
                 
                 // Drop all tables dynamically
-                Console.WriteLine(" 🗑️  Dropping existing tables...");
+                Console.WriteLine("Dropping existing tables...");
                 try
                 {
                     var dropTablesSQL = @"
@@ -131,15 +131,15 @@ public class DataSeeder : IDataSeeder
                     ";
                     var cmd = new CommandDefinition(dropTablesSQL);
                     await connection.ExecuteAsync(cmd);
-                    Console.WriteLine(" ✅ Old tables dropped");
+                    Console.WriteLine("Old tables dropped");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($" ⚠️  Could not drop tables: {ex.Message}");
+                    Console.WriteLine($"Could not drop tables: {ex.Message}");
                 }
                 
                 // Execute schema creation
-                Console.WriteLine(" 📝 Creating new schema...");
+                Console.WriteLine("Creating new schema...");
                 var statements = schema.Split(new[] { "\r\nGO\r\n", "\nGO\n", "\r\nGO", "\nGO", "GO" }, StringSplitOptions.RemoveEmptyEntries);
                 
                 int statementCount = 0;
@@ -156,18 +156,18 @@ public class DataSeeder : IDataSeeder
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"   ⚠️  Statement failed: {ex.Message}");
+                            Console.WriteLine($"Statement failed: {ex.Message}");
                             // Continue with next statement - some might be dependent
                         }
                     }
                 }
 
-                Console.WriteLine($" ✅ Database schema created successfully! ({statementCount} statements executed)");
+                Console.WriteLine($"Database schema created successfully ({statementCount} statements executed)");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($" ❌ Error creating schema: {ex.Message}");
+            Console.WriteLine($"Error creating schema: {ex.Message}");
             throw;
         }
     }
@@ -206,18 +206,18 @@ public class DataSeeder : IDataSeeder
         // First ensure database schema is valid (recreate if schema is outdated)
         if (!await SchemaIsValidAsync())
         {
-            Console.WriteLine(" ⚠️  Schema is invalid or outdated. Reinitializing...");
+            Console.WriteLine("Schema is invalid or outdated. Reinitializing...");
             await InitializeDatabaseSchemaAsync();
         }
 
         // Check if database has already been seeded
         if (await IsSeededAsync())
         {
-            Console.WriteLine(" ✅ Database already seeded, skipping data seeding.");
+            Console.WriteLine("Database already seeded, skipping data seeding.");
             return;
         }
 
-        Console.WriteLine(" 🌱 Starting data seeding...");
+        Console.WriteLine("Starting data seeding...");
 
         try
         {
