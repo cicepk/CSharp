@@ -8,7 +8,6 @@ using TuneVault.Application.DTOs.Auth;
 using TuneVault.Application.Features.Auth.Commands;
 using TuneVault.Application.Features.User.Commands;
 using TuneVault.Application.Features.User.Queries;
-using TuneVault.Application.Interfaces;
 
 namespace TuneVault.API.Controllers;
 
@@ -16,13 +15,11 @@ namespace TuneVault.API.Controllers;
 [Route("api/[controller]")]
 public class UserController : ControllerBase
 {
-    private readonly IMediator           _mediator;
-    private readonly IFileStorageService _fileStorageService;
+    private readonly IMediator _mediator;
 
-    public UserController(IMediator mediator, IFileStorageService fileStorageService)
+    public UserController(IMediator mediator)
     {
-        _mediator           = mediator;
-        _fileStorageService = fileStorageService;
+        _mediator = mediator;
     }
 
     private Guid   GetCurrentUserId() {
@@ -105,38 +102,18 @@ public class UserController : ControllerBase
     [Authorize]
     public async Task<IActionResult> UploadAvatar(IFormFile file, CancellationToken ct)
     {
-        if (file == null || file.Length == 0)
-            return BadRequest(ApiResponse<object>.ErrorResponse("No file provided"));
+        // File validation lives in UploadAvatarValidator; controller only reads the stream + metadata.
+        using var stream = file is { Length: > 0 } ? file.OpenReadStream() : System.IO.Stream.Null;
 
-        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-        string[] allowed = [".jpg", ".jpeg", ".png", ".webp"];
-        if (!allowed.Contains(ext))
-            return BadRequest(ApiResponse<object>.ErrorResponse("Only JPG, PNG, WebP images are allowed"));
-
-        if (file.Length > 5L * 1024 * 1024)
-            return BadRequest(ApiResponse<object>.ErrorResponse("File size must be under 5MB"));
-
-        var userId = GetCurrentUserId();
-
-        // Lấy avatar path cũ trước khi save
-        var currentUser = await _mediator.Send(new GetCurrentUserQuery { UserId = userId, BaseUrl = BaseUrl }, ct);
-        var oldAvatarPath = currentUser.AvatarUrl != null
-            ? "/" + string.Join("/", currentUser.AvatarUrl.Split('/').Skip(3))
-            : null;
-
-        using var stream   = file.OpenReadStream();
-        var newAvatarPath  = await _fileStorageService.SaveAsync(stream, $"{userId}{ext}", "avatars", ct);
-
-        var avatarUrl = await _mediator.Send(new UploadAvatarCommand
+        var newAvatarPath = await _mediator.Send(new UploadAvatarCommand
         {
-            UserId        = userId,
-            NewAvatarPath = newAvatarPath,
-            OldAvatarPath = oldAvatarPath
+            UserId        = GetCurrentUserId(),
+            FileStream    = stream,
+            FileName      = file?.FileName ?? string.Empty,
+            FileSizeBytes = file?.Length ?? 0
         }, ct);
 
-        return Ok(ApiResponse<object>.SuccessResponse(new
-        {
-            avatarUrl = avatarUrl.StartsWith("http") ? avatarUrl : $"{BaseUrl}{avatarUrl}"
-        }, "Avatar updated"));
+        var avatarUrl = newAvatarPath.StartsWith("http") ? newAvatarPath : $"{BaseUrl}{newAvatarPath}";
+        return Ok(ApiResponse<object>.SuccessResponse(new { avatarUrl }, "Avatar updated"));
     }
 }
