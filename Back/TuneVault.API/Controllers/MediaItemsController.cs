@@ -16,19 +16,12 @@ namespace TuneVault.API.Controllers;
 public class MediaItemsController : ControllerBase
 {
     private readonly IMediator           _mediator;
-    private readonly IFileStorageService _fileStorageService;
     private readonly IWebHostEnvironment _env;
 
-    private static readonly string[] AllowedAudioExtensions = [".mp3", ".wav", ".flac", ".m4a"];
-    private static readonly string[] AllowedVideoExtensions = [".mp4", ".webm", ".mkv"];
-    private const long MaxFileSizeBytes = 500L * 1024 * 1024;
-    private const long MinFileSizeBytes = 1L * 1024;
-
-    public MediaItemsController(IMediator mediator, IFileStorageService fileStorageService, IWebHostEnvironment env)
+    public MediaItemsController(IMediator mediator, IWebHostEnvironment env)
     {
-        _mediator           = mediator;
-        _fileStorageService = fileStorageService;
-        _env                = env;
+        _mediator = mediator;
+        _env      = env;
     }
 
     private Guid   GetCurrentUserId() {
@@ -90,68 +83,25 @@ public class MediaItemsController : ControllerBase
         IFormFile? cover,
         CancellationToken ct)
     {
-        // HTTP-boundary validation stays in controller
-        var errors = new List<string>();
-        if (string.IsNullOrWhiteSpace(request.Title))  errors.Add("Title is required");
-        if (string.IsNullOrWhiteSpace(request.Artist)) errors.Add("Artist is required");
-        if (request.MediaType != 1 && request.MediaType != 2)
-            errors.Add("MediaType must be 1 (Audio) or 2 (Video)");
-
-        if (file == null || file.Length == 0)
-            errors.Add("File is required");
-        else
-        {
-            if (file.Length < MinFileSizeBytes) errors.Add("File too small (min 1KB)");
-            if (file.Length > MaxFileSizeBytes) errors.Add("File too large (max 500MB)");
-
-            var ext    = Path.GetExtension(file.FileName).ToLowerInvariant();
-            var isAudio = AllowedAudioExtensions.Contains(ext);
-            var isVideo = AllowedVideoExtensions.Contains(ext);
-
-            if (!isAudio && !isVideo)
-                errors.Add($"Unsupported file type '{ext}'");
-            else if (request.MediaType == 1 && !isAudio)
-                errors.Add("File extension does not match Audio type");
-            else if (request.MediaType == 2 && !isVideo)
-                errors.Add("File extension does not match Video type");
-        }
-
-        string[] allowedCoverExts = [".jpg", ".jpeg", ".png", ".webp"];
-        if (cover != null && cover.Length > 0)
-        {
-            var coverExt = Path.GetExtension(cover.FileName).ToLowerInvariant();
-            if (!allowedCoverExts.Contains(coverExt))
-                errors.Add("Cover must be JPG, PNG or WebP");
-            if (cover.Length > 5L * 1024 * 1024)
-                errors.Add("Cover image must be under 5MB");
-        }
-
-        if (errors.Count > 0)
-            return BadRequest(ApiResponse<object>.ErrorResponse(errors.ToArray(), "Validation failed"));
-
-        // Save files via IFileStorageService
-        var subFolder  = request.MediaType == 1 ? "audio" : "video";
-        using var fileStream = file!.OpenReadStream();
-        var filePath = await _fileStorageService.SaveAsync(fileStream, file.FileName, subFolder, ct);
-
-        string? coverPath = null;
-        if (cover != null && cover.Length > 0)
-        {
-            using var coverStream = cover.OpenReadStream();
-            coverPath = await _fileStorageService.SaveAsync(coverStream, cover.FileName, "covers", ct);
-        }
+        // Controller read stream + metadata from IFormFile and push command
+        using var fileStream  = file is { Length: > 0 } ? file.OpenReadStream() : System.IO.Stream.Null;
+        using var coverStream = cover is { Length: > 0 } ? cover.OpenReadStream() : null;
 
         var result = await _mediator.Send(new UploadMediaCommand
         {
-            Title = request.Title,
-            Artist = request.Artist,
-            MediaType = request.MediaType,
-            FilePath = filePath,
-            CoverPath = coverPath,
-            OwnerId = GetCurrentUserId(),
-            BaseUrl = BaseUrl,
+            Title           = request.Title,
+            Artist          = request.Artist,
+            MediaType       = request.MediaType,
+            FileStream      = fileStream,
+            FileName        = file?.FileName ?? string.Empty,
+            FileSizeBytes   = file?.Length ?? 0,
+            CoverStream     = coverStream,
+            CoverFileName   = cover is { Length: > 0 } ? cover.FileName : null,
+            CoverSizeBytes  = cover?.Length ?? 0,
+            OwnerId         = GetCurrentUserId(),
+            BaseUrl         = BaseUrl,
             DurationSeconds = request.DurationSeconds,
-            GenreIds = request.GenreIds ?? new List<Guid>()
+            GenreIds        = request.GenreIds ?? new List<Guid>()
         }, ct);
 
         return CreatedAtAction(nameof(GetById), new { id = result.Id },

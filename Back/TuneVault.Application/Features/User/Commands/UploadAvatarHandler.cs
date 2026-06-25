@@ -20,11 +20,16 @@ public class UploadAvatarHandler : IRequestHandler<UploadAvatarCommand, string>
         if (user == null)
             throw new KeyNotFoundException("User not found");
 
-        await _fileStorageService.DeleteAsync(command.OldAvatarPath, cancellationToken);
+        // Save the new avatar (name it by user id to keep one file per user)
+        var fileName = $"{command.UserId}{Path.GetExtension(command.FileName)}";
+        var newAvatarPath = await _fileStorageService.SaveAsync(command.FileStream, fileName, "avatars", cancellationToken);
 
-        user.AvatarPath = command.NewAvatarPath;
+        // Remove the previous avatar (read directly from the entity, no need to pass it in)
+        await _fileStorageService.DeleteAsync(user.AvatarPath, cancellationToken);
+
+        user.AvatarPath = newAvatarPath;
         await _userRepository.UpdateAsync(user, cancellationToken);
 
-        return command.NewAvatarPath;
+        return newAvatarPath;
     }
 }

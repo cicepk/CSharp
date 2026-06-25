@@ -1,5 +1,8 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using TuneVault.Application.Interfaces;
+using TuneVault.Application.DTOs.Common;
+using TuneVault.Application.DTOs.Genre;
+using TuneVault.Application.Features.Genre.Queries;
 
 namespace TuneVault.API.Controllers;
 
@@ -7,19 +10,18 @@ namespace TuneVault.API.Controllers;
 [Route("api/[controller]")]
 public class GenreController : ControllerBase
 {
-    private readonly IMediaItemRepository _mediaItemRepository;
+    private readonly IMediator _mediator;
 
-    public GenreController(IMediaItemRepository mediaItemRepository)
+    public GenreController(IMediator mediator)
     {
-        _mediaItemRepository = mediaItemRepository;
+        _mediator = mediator;
     }
 
     // GET /api/genre
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        var genres = await _mediaItemRepository.GetAllGenresAsync(ct);
-        var result = genres.Select(g => new { g.Id, g.Name });
-        return Ok(result);
+        var result = await _mediator.Send(new GetAllGenresQuery(), ct);
+        return Ok(ApiResponse<List<GenreDto>>.SuccessResponse(result));
     }
 }

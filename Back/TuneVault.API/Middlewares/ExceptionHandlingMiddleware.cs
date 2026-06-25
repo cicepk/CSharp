@@ -38,7 +38,7 @@ public class ExceptionHandlingMiddleware
         {
             case ValidationException validationEx:
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                message = "Dữ liệu đầu vào không hợp lệ.";
+                message = "Invalid input data.";
                 errors = validationEx.Errors.Select(e => e.ErrorMessage).ToArray();
                 break;
 
@@ -62,7 +62,7 @@ public class ExceptionHandlingMiddleware
 
             case UnauthorizedAccessException:
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                message = "Bạn không có quyền thực hiện thao tác này.";
+                message = "You do not have permission to perform this action.";
                 errors = [message];
                 break;
 
@@ -75,7 +75,7 @@ public class ExceptionHandlingMiddleware
                 _logger.LogError(exception, "Unhandled exception: {Message}\n{StackTrace}",
                     exception.Message, exception.StackTrace);
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                message = "Đã xảy ra lỗi hệ thống.";
+                message = "A system error occurred.";
                 // In development, include exception details for debugging
                 errors = isDevelopment 
                     ? [exception.Message, exception.GetType().Name, exception.StackTrace ?? "No stack trace"]

@@ -11,6 +11,6 @@ public class FollowUserValidator : AbstractValidator<FollowUserCommand>
 
         RuleFor(x => x.TargetUserId)
             .NotEmpty().WithMessage("TargetUserId is required")
-            .NotEqual(x => x.FollowerId).WithMessage("Không thể tự follow chính mình");
+            .NotEqual(x => x.FollowerId).WithMessage("You cannot follow yourself");
     }
 }
