@@ -72,7 +72,7 @@ public class ExceptionHandlingMiddleware
                 return;
 
             default:
-                _logger.LogError(exception, "❌ Unhandled exception: {Message}\n{StackTrace}", 
+                _logger.LogError(exception, "Unhandled exception: {Message}\n{StackTrace}",
                     exception.Message, exception.StackTrace);
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                 message = "Đã xảy ra lỗi hệ thống.";
