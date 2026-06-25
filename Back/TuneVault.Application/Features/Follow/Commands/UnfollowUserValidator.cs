@@ -11,6 +11,6 @@ public class UnfollowUserValidator : AbstractValidator<UnfollowUserCommand>
 
         RuleFor(x => x.TargetUserId)
             .NotEmpty().WithMessage("TargetUserId is required")
-            .NotEqual(x => x.FollowerId).WithMessage("FollowerId và TargetUserId không được trùng nhau");
+            .NotEqual(x => x.FollowerId).WithMessage("FollowerId and TargetUserId must be different");
     }
 }

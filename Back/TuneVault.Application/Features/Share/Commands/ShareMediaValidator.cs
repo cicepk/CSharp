@@ -11,12 +11,12 @@ public class ShareMediaValidator : AbstractValidator<ShareMediaCommand>
 
         RuleFor(x => x)
             .Must(x => x.MediaItemId.HasValue || x.PlaylistId.HasValue)
-            .WithMessage("Phải chọn ít nhất một MediaItem hoặc Playlist để chia sẻ")
+            .WithMessage("You must select at least a MediaItem or a Playlist to share")
             .Must(x => !(x.MediaItemId.HasValue && x.PlaylistId.HasValue))
-            .WithMessage("Không thể chia sẻ đồng thời cả MediaItem và Playlist trong một yêu cầu");
+            .WithMessage("You cannot share both a MediaItem and a Playlist in a single request");
 
         RuleFor(x => x.SenderId)
             .NotEmpty().WithMessage("SenderId is required")
-            .NotEqual(x => x.ReceiverUserId).WithMessage("Không thể tự chia sẻ cho chính mình");
+            .NotEqual(x => x.ReceiverUserId).WithMessage("You cannot share with yourself");
     }
 }

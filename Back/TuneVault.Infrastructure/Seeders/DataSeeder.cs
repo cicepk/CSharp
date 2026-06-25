@@ -232,53 +232,53 @@ public class DataSeeder : IDataSeeder
                     {
                         // Seed users
                         await SeedUsersAsync(connection, transaction);
-                        Console.WriteLine(" Seed 2 users thành công");
+                        Console.WriteLine(" Seeded 2 users successfully");
 
                         // Seed media items
                         await SeedMediaItemsAsync(connection, transaction);
-                        Console.WriteLine(" Seed 13 media items (10 audio + 3 video) thành công");
+                        Console.WriteLine(" Seeded 13 media items (10 audio + 3 video) successfully");
 
                         // Seed genres
                         await SeedGenresAsync(connection, transaction);
-                        Console.WriteLine(" Seed 8 genres thành công");
+                        Console.WriteLine(" Seeded 8 genres successfully");
 
                         // Seed media-genre links
                         await SeedMediaGenresAsync(connection, transaction);
-                        Console.WriteLine(" Seed 26 media-genre links thành công");
+                        Console.WriteLine(" Seeded 26 media-genre links successfully");
 
                         // Seed playlists
                         await SeedPlaylistsAsync(connection, transaction);
-                        Console.WriteLine(" Seed 2 playlists thành công");
+                        Console.WriteLine(" Seeded 2 playlists successfully");
 
                         // Seed playlist items
                         await SeedPlaylistItemsAsync(connection, transaction);
-                        Console.WriteLine(" Seed playlist items thành công");
+                        Console.WriteLine(" Seeded playlist items successfully");
 
                         // Seed favorites
                         await SeedFavouritesAsync(connection, transaction);
-                        Console.WriteLine(" Seed favorites thành công");
+                        Console.WriteLine(" Seeded favorites successfully");
 
                         // Seed follows
                         await SeedFollowsAsync(connection, transaction);
-                        Console.WriteLine(" Seed relationships thành công");
+                        Console.WriteLine(" Seeded relationships successfully");
 
                         // Seed media shares
                         await SeedMediaSharesAsync(connection, transaction);
-                        Console.WriteLine(" Seed shares thành công");
+                        Console.WriteLine(" Seeded shares successfully");
 
                         // Seed notifications
                         await SeedNotificationsAsync(connection, transaction);
-                        Console.WriteLine(" Seed notifications thành công");
+                        Console.WriteLine(" Seeded notifications successfully");
 
-                        // Commit transaction - lưu tất cả changes
+                        // Commit transaction - persist all changes
                         transaction.Commit();
-                        Console.WriteLine("\n Seed dữ liệu hoàn tất thành công!");
+                        Console.WriteLine("\n Data seeding completed successfully!");
                     }
                     catch (Exception ex)
                     {
-                        // Nếu có lỗi → rollback transaction
+                        // On error -> rollback transaction
                         transaction.Rollback();
-                        Console.WriteLine($"\n Lỗi seed dữ liệu: {ex.Message}");
+                        Console.WriteLine($"\n Data seeding error: {ex.Message}");
                         throw;
                     }
                 }
@@ -286,7 +286,7 @@ public class DataSeeder : IDataSeeder
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"\n Lỗi kết nối database: {ex.Message}");
+            Console.WriteLine($"\n Database connection error: {ex.Message}");
             throw;
         }
     }

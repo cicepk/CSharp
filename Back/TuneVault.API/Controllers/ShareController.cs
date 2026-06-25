@@ -1,110 +1,68 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using TuneVault.Application.DTOs.Common;
 using TuneVault.Application.DTOs.Share;
 using TuneVault.Application.Features.Share.Commands;
 using TuneVault.Application.Features.Share.Queries;
 
+namespace TuneVault.API.Controllers;
 
-namespace TuneVault.API.Controllers
+[ApiController]
+[Route("api/share")]
+[Authorize]
+public class ShareController : ControllerBase
 {
-    [Authorize]
-    [ApiController]
-    [Route("api/share")]
-    public class ShareController : ControllerBase
+    private readonly IMediator _mediator;
+
+    public ShareController(IMediator mediator)
     {
-        private readonly IMediator _mediator;
+        _mediator = mediator;
+    }
 
-        public ShareController(IMediator mediator)
+    private Guid GetCurrentUserId()
+    {
+        var claim = User.FindFirst("userId") ?? User.FindFirst(ClaimTypes.NameIdentifier);
+        return Guid.TryParse(claim?.Value, out var id) ? id : Guid.Empty;
+    }
+
+    // POST /api/share
+    [HttpPost]
+    public async Task<IActionResult> ShareMedia([FromBody] ShareMediaRequest request, CancellationToken ct)
+    {
+        var shareId = await _mediator.Send(new ShareMediaCommand
         {
-            _mediator = mediator;
-        }
+            SenderId       = GetCurrentUserId(),
+            ReceiverUserId = request.ReceiverUserId,
+            MediaItemId    = request.MediaItemId,
+            PlaylistId     = request.PlaylistId
+        }, ct);
 
-        private Guid? GetCurrentUserId()
-        {
-            var raw = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return Guid.TryParse(raw, out var id) ? id : null;
-        }
+        return Ok(ApiResponse<Guid>.SuccessResponse(shareId, "Shared successfully"));
+    }
 
-        /// <summary>
-        /// Chia sẻ bài hát hoặc playlist cho user khác.
-        /// POST /api/share
-        /// </summary>
-        [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<Guid>), 200)]
-        [ProducesResponseType(typeof(ApiResponse<object>), 400)]
-        [ProducesResponseType(401)]
-        public async Task<IActionResult> ShareMedia([FromBody] ShareMediaRequest request)
-        {
-            var senderId = GetCurrentUserId();
-            if (senderId is null)
-                return Unauthorized(ApiResponse<object>.SetFailure(new() { "Token không hợp lệ hoặc đã hết hạn." }));
+    // GET /api/share/inbox
+    [HttpGet("inbox")]
+    public async Task<IActionResult> GetInbox(CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetShareInboxQuery { UserId = GetCurrentUserId() }, ct);
+        return Ok(ApiResponse<IEnumerable<MediaShareDto>>.SuccessResponse(result, "Inbox retrieved successfully"));
+    }
 
-            var command = new ShareMediaCommand
-            {
-                SenderId       = senderId.Value,
-                ReceiverUserId = request.ReceiverUserId,
-                MediaItemId    = request.MediaItemId,
-                PlaylistId     = request.PlaylistId
-            };
+    // GET /api/share/sent
+    [HttpGet("sent")]
+    public async Task<IActionResult> GetSent(CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetShareSentQuery { UserId = GetCurrentUserId() }, ct);
+        return Ok(ApiResponse<IEnumerable<MediaShareDto>>.SuccessResponse(result, "Sent list retrieved successfully"));
+    }
 
-            var shareId = await _mediator.Send(command);
-            return Ok(ApiResponse<Guid>.SetSuccess(shareId, "Chia sẻ thành công!"));
-        }
-
-        /// <summary>
-        /// Xem danh sách media được chia sẻ đến tôi.
-        /// GET /api/share/inbox
-        /// </summary>
-        [HttpGet("inbox")]
-        [ProducesResponseType(typeof(ApiResponse<IEnumerable<MediaShareDto>>), 200)]
-        public async Task<IActionResult> GetInbox()
-        {
-            var userId = GetCurrentUserId();
-            if (userId is null)
-                return Unauthorized(ApiResponse<object>.SetFailure(new() { "Token không hợp lệ hoặc đã hết hạn." }));
-
-            var query = new GetShareInboxQuery { UserId = userId.Value };
-            var result = await _mediator.Send(query);
-
-            return Ok(ApiResponse<IEnumerable<MediaShareDto>>.SetSuccess(result, "Lấy danh sách chia sẻ thành công."));
-        }
-
-        /// <summary>
-        /// Xem danh sách media tôi đã chia sẻ đi.
-        /// GET /api/share/sent
-        /// </summary>
-        [HttpGet("sent")]
-        [ProducesResponseType(typeof(ApiResponse<IEnumerable<MediaShareDto>>), 200)]
-        public async Task<IActionResult> GetSent()
-        {
-            var userId = GetCurrentUserId();
-            if (userId is null)
-                return Unauthorized(ApiResponse<object>.SetFailure(new() { "Token không hợp lệ hoặc đã hết hạn." }));
-
-            var query = new GetShareSentQuery { UserId = userId.Value };
-            var result = await _mediator.Send(query);
-
-            return Ok(ApiResponse<IEnumerable<MediaShareDto>>.SetSuccess(result, "Lấy danh sách đã gửi thành công."));
-        }
-
-        /// <summary>
-        /// Xóa một bản ghi chia sẻ (người gửi hoặc người nhận đều có thể xóa).
-        /// DELETE /api/share/{id}
-        /// </summary>
-        [HttpDelete("{id:guid}")]
-        [ProducesResponseType(204)]
-        [ProducesResponseType(401)]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            var userId = GetCurrentUserId();
-            if (userId is null)
-                return Unauthorized(ApiResponse<object>.SetFailure(new() { "Token không hợp lệ hoặc đã hết hạn." }));
-
-            await _mediator.Send(new DeleteShareCommand { ShareId = id, CurrentUserId = userId.Value });
-            return NoContent();
-        }
+    // DELETE /api/share/{id}
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await _mediator.Send(new DeleteShareCommand { ShareId = id, CurrentUserId = GetCurrentUserId() }, ct);
+        return NoContent();
     }
 }
