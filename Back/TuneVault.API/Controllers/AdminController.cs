@@ -44,21 +44,8 @@ public class AdminController : ControllerBase
     [HttpGet("users/{id:guid}/tracks")]
     public async Task<IActionResult> GetUserTracks(Guid id, CancellationToken ct)
     {
-        var tracks = await _mediator.Send(new GetUserTracksAdminQuery { UserId = id }, ct);
-        var dtos = tracks.Select(t => new
-        {
-            id = t.Id,
-            title = t.Title,
-            artist = t.Artist,
-            mediaType = t.MediaType,
-            durationSeconds = t.DurationSeconds,
-            coverPath = t.CoverPath != null
-                ? (t.CoverPath.StartsWith("http") ? t.CoverPath : $"{BaseUrl}{t.CoverPath}")
-                : null,
-            createdAt = t.CreatedAt
-        }).ToList();
-
-        return Ok(ApiResponse<object>.SuccessResponse(dtos));
+        var tracks = await _mediator.Send(new GetUserTracksAdminQuery { UserId = id, BaseUrl = BaseUrl }, ct);
+        return Ok(ApiResponse<List<AdminTrackDto>>.SuccessResponse(tracks));
     }
 
     // DELETE /api/admin/tracks/{id}
