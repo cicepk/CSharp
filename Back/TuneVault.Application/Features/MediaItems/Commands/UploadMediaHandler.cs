@@ -8,21 +8,30 @@ namespace TuneVault.Application.Features.MediaItems.Commands;
 public class UploadMediaHandler : IRequestHandler<UploadMediaCommand, MediaDto>
 {
     private readonly IMediaItemRepository _mediaItemRepository;
+    private readonly IFileStorageService _fileStorageService;
 
-    public UploadMediaHandler(IMediaItemRepository mediaItemRepository)
+    public UploadMediaHandler(IMediaItemRepository mediaItemRepository, IFileStorageService fileStorageService)
     {
         _mediaItemRepository = mediaItemRepository;
+        _fileStorageService = fileStorageService;
     }
 
     public async Task<MediaDto> Handle(UploadMediaCommand command, CancellationToken cancellationToken)
     {
+        var subFolder = command.MediaType == 1 ? "audio" : "video";
+        var filePath = await _fileStorageService.SaveAsync(command.FileStream, command.FileName, subFolder, cancellationToken);
+
+        string? coverPath = null;
+        if (command.CoverStream != null && command.CoverFileName != null)
+            coverPath = await _fileStorageService.SaveAsync(command.CoverStream, command.CoverFileName, "covers", cancellationToken);
+
         var mediaItem = new MediaItem
         {
             Id = Guid.NewGuid(),
             Title = command.Title.Trim(),
             Artist = command.Artist.Trim(),
-            FilePath = command.FilePath,
-            CoverPath = command.CoverPath,
+            FilePath = filePath,
+            CoverPath = coverPath,
             MediaType = (Domain.Enums.MediaType)command.MediaType,
             DurationSeconds = command.DurationSeconds,
             OwnerId = command.OwnerId,
